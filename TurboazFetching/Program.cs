@@ -7,12 +7,15 @@ using System;
 using System.Xml.Linq;
 using TurboazFetching.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Http;
 
 namespace TurboazFetching
 {
     internal class Program
     {
-        public static async Task<HtmlDocument> DownloadPage(string Url) {
+        public static async Task<HtmlDocument> DownloadPage(string Url)
+        {
             var httpClient = new HttpClient();
             var response = await httpClient.GetAsync(Url);
             var content = await response.Content.ReadAsStringAsync();
@@ -59,7 +62,7 @@ namespace TurboazFetching
             }
         }
 
-        public static async void GetAllBrands()
+        public static async void GetAllBrandandModels()
         {
             string Url = "https://turbo.az";
             var optionvalue = String.Empty;
@@ -67,7 +70,7 @@ namespace TurboazFetching
             var doc = DownloadPage(Url).Result;
 
             var elements = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[make][]").Descendants("option");
-            
+
             foreach (var item in elements)
             {
                 optionvalue = item.GetAttributeValue("value", "");
@@ -98,6 +101,7 @@ namespace TurboazFetching
         {
             Console.WriteLine("How many pages do you want to fetch: ");
             int pageCount = int.Parse(Console.ReadLine());
+            Console.Clear();
 
             // Download the latest version of Chromium
             await new BrowserFetcher().DownloadAsync();
@@ -122,17 +126,19 @@ namespace TurboazFetching
 
                 foreach (var element in productNodes)
                 {
-                    var Name = await element.QuerySelectorAsync(".products-i__name");
-                    var Atributes = await element.QuerySelectorAsync(".products-i__attributes");
-                    var Datetime = await element.QuerySelectorAsync(".products-i__datetime");
+                    //var Name = await element.QuerySelectorAsync(".products-i__name");
+                    //var Atributes = await element.QuerySelectorAsync(".products-i__attributes");
+                    //var Datetime = await element.QuerySelectorAsync(".products-i__datetime");
                     var CarLink = await element.QuerySelectorAsync(".products-i__link");
 
                     Console.WriteLine($"Car {CarCount++}");
-                    Console.WriteLine("Name: " + await Name?.EvaluateFunctionAsync<string>("node => node.innerText"));
-                    Console.WriteLine("Atributes: " + await Atributes?.EvaluateFunctionAsync<string>("node => node.innerText"));
-                    Console.WriteLine("Datetime: " + await Datetime?.EvaluateFunctionAsync<string>("node => node.innerText"));
-                    Console.WriteLine("CarLink: " + await CarLink?.EvaluateFunctionAsync<string>("node => node.href"));
-                    Console.WriteLine();
+                    GetSpesificCarPuppeteer(await CarLink?.EvaluateFunctionAsync<string>("node => node.href"));
+
+                    //Console.WriteLine("Name: " + await Name?.EvaluateFunctionAsync<string>("node => node.innerText"));
+                    //Console.WriteLine("Atributes: " + await Atributes?.EvaluateFunctionAsync<string>("node => node.innerText"));
+                    //Console.WriteLine("Datetime: " + await Datetime?.EvaluateFunctionAsync<string>("node => node.innerText"));
+                    //Console.WriteLine("CarLink: " + await CarLink?.EvaluateFunctionAsync<string>("node => node.href"));
+                    //Console.WriteLine();
                 }
                 Console.WriteLine();
                 Console.WriteLine();
@@ -140,11 +146,12 @@ namespace TurboazFetching
             }
         }
 
-        public static async void GetSpesificCarPuppeteer() {
-
-            var url = $"https://turbo.az/autos/7249762-bmw-528";
+        public static async void GetSpesificCarPuppeteer(string url)
+        {
 
             var doc = DownloadPage(url).Result;
+
+            var test = doc.DocumentNode.InnerHtml;
 
             var productNodes = doc.DocumentNode.Descendants("div");
 
@@ -158,6 +165,7 @@ namespace TurboazFetching
                     Console.WriteLine($"{Property}: {Value}");
                 }
             }
+            Console.WriteLine();
         }
 
         public static async void GetCarsSelenium()
@@ -201,20 +209,23 @@ namespace TurboazFetching
                 {
                     var productNode = productElements[j];
 
-                    var name = productNode.FindElement(By.CssSelector(".products-i__name")).Text;
-                    var attributes = productNode.FindElement(By.CssSelector(".products-i__attributes")).Text;
-                    var datetime = productNode.FindElement(By.CssSelector(".products-i__datetime")).Text;
+                    var Name = productNode.FindElement(By.CssSelector(".products-i__name")).Text;
+                    var Attributes = productNode.FindElement(By.CssSelector(".products-i__attributes")).Text;
+                    var DateTime = productNode.FindElement(By.CssSelector(".products-i__datetime")).Text;
+                    var CarLink = productNode.FindElement(By.CssSelector(".products-i__link")).Text;
 
                     Console.WriteLine($"Car {j + 1}");
-                    Console.WriteLine("Name: " + name);
-                    Console.WriteLine("Attributes: " + attributes);
-                    Console.WriteLine("Datetime: " + datetime);
+                    Console.WriteLine("Name: " + Name);
+                    Console.WriteLine("Attributes: " + Attributes);
+                    Console.WriteLine("Datetime: " + DateTime);
+                    Console.WriteLine("CarLink: " + CarLink);
                     Console.WriteLine();
                 }
             }
         }
 
-        public static async void GetCities() {
+        public static async void GetCities()
+        {
             var url = $"https://turbo.az";
             var doc = DownloadPage(url).Result;
             var OptionValue = String.Empty;
@@ -254,7 +265,7 @@ namespace TurboazFetching
 
         }
 
-        public static async void GetCategory()
+        public static async void GetCategories()
         {
             var url = $"https://turbo.az";
             var doc = DownloadPage(url).Result;
@@ -275,25 +286,145 @@ namespace TurboazFetching
 
         }
 
+        public static async void GetColors()
+        {
+            var url = $"https://turbo.az";
+            var doc = DownloadPage(url).Result;
+            var OptionValue = String.Empty;
+
+            var productNodes = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[color][]").Descendants("option"); ;
+
+            foreach (var item in productNodes)
+            {
+                OptionValue = item.GetAttributeValue("value", "");
+
+                Console.WriteLine("Color: ");
+                Console.WriteLine("ColorOptionValue: " + OptionValue);
+                Console.WriteLine("InnerHtml: " + item.InnerHtml);
+
+                Console.WriteLine();
+            }
+
+        }
+
+        public static async void GetFueltypes()
+        {
+            var url = $"https://turbo.az";
+            var doc = DownloadPage(url).Result;
+            var OptionValue = String.Empty;
+
+            var productNodes = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[fuel_type][]").Descendants("option"); ;
+
+            foreach (var item in productNodes)
+            {
+                OptionValue = item.GetAttributeValue("value", "");
+
+                Console.WriteLine("Fueltype: ");
+                Console.WriteLine("FueltypeOptionValue: " + OptionValue);
+                Console.WriteLine("InnerHtml: " + item.InnerHtml);
+
+                Console.WriteLine();
+            }
+
+        }
+
+        public static async void GetTransmissions()
+        {
+            var url = $"https://turbo.az";
+            var doc = DownloadPage(url).Result;
+            var OptionValue = String.Empty;
+
+            var productNodes = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[transmission][]").Descendants("option"); ;
+
+            foreach (var item in productNodes)
+            {
+                OptionValue = item.GetAttributeValue("value", "");
+
+                Console.WriteLine("Fueltype: ");
+                Console.WriteLine("FueltypeOptionValue: " + OptionValue);
+                Console.WriteLine("InnerHtml: " + item.InnerHtml);
+
+                Console.WriteLine();
+            }
+
+        }
+
+        public static async void GetCurrencies()
+        {
+            var url = $"https://turbo.az";
+            var doc = DownloadPage(url).Result;
+            var OptionValue = String.Empty;
+
+            var productNodes = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[currency]").Descendants("option"); ;
+
+            foreach (var item in productNodes)
+            {
+                OptionValue = item.GetAttributeValue("value", "");
+
+                Console.WriteLine("Currency: ");
+                Console.WriteLine("CurrencyOptionValue: " + OptionValue);
+                Console.WriteLine("InnerHtml: " + item.InnerHtml);
+
+                Console.WriteLine();
+            }
+
+        }
+
+        public static async void GetImagesofCarandCopytoFile(string url)
+        {
+            var doc = DownloadPage(url).Result;
+
+
+            var productNodes = doc.DocumentNode.Descendants("div");
+
+
+            foreach (var element in productNodes)
+            {
+                if (element.GetAttributeValue("class", "") == "js-fotorama fotorama")
+                {
+                    doc.LoadHtml(element.InnerHtml);
+                    var images = doc.DocumentNode.Descendants("a");
+                    foreach (var image in images)
+                    {
+                        var ImageLink = image.GetAttributeValue("href", "");
+
+                        var Client = new WebClient();
+                        var imageName = Guid.NewGuid().ToString() + Path.GetExtension(ImageLink);
+                        string folderPath = Path.Combine(System.IO.Path.GetFullPath(@"..\..\..\"), "Images");
+                
+                        if (!Directory.Exists(folderPath))
+                        {
+                            Directory.CreateDirectory(folderPath);
+                        }
+
+                        string filePath = Path.Combine(folderPath, imageName);
+                        Client.DownloadFile(ImageLink, filePath);
+                    }
+                }
+            }
+            Console.WriteLine();
+        }
+
 
         static async Task Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             AppDbContext dbContext = new AppDbContext();
-            foreach (var item in dbContext.Cities.ToList())
-            {
-                Console.WriteLine(item.Name);
-            }
-            
+
             // GetCars();
-            // GetAllBrands();
+            // GetAllBrandandModels();
             // GetCarsPuppeteer();
             // GetCarsSelenium();
             // GetCities();
             // GetYears();
-            // GetCategory();
-            // GetSpesificCarPuppeteer();
-  
+            // GetCategories();
+            // GetSpesificCarPuppeteer("https://turbo.az/autos/7026350-bmw-m5");
+            // GetColors();
+            // GetFueltypes();
+            // GetTransmissions();
+            // GetCurrencies();
+            GetImagesofCarandCopytoFile("https://turbo.az/autos/7026350-bmw-m5");
+            Console.ReadLine();
         }
     }
 }
