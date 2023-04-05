@@ -15,9 +15,15 @@ namespace TurboazFetching.Data
         public DbSet<Car> Cars { get; set; }
         public DbSet<Fueltype> Fueltypes { get; set; }
         public DbSet<Entities.Image> Images { get; set; }
-        public DbSet<City> Cities { get; set; }
+        public DbSet<Region> Regions { get; set; }
         public DbSet<Currency> Currencies { get; set; }
 
+        public AppDbContext() { }
+
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -28,6 +34,8 @@ namespace TurboazFetching.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            #region SettingRelations
 
             modelBuilder.Entity<Brand>()
               .HasMany<Car>()
@@ -54,10 +62,10 @@ namespace TurboazFetching.Data
               .OnDelete(DeleteBehavior.Restrict)
               .IsRequired();
 
-            modelBuilder.Entity<City>()
+            modelBuilder.Entity<Region>()
               .HasMany<Car>()
-              .WithOne(c => c.City)
-              .HasForeignKey("CityId")
+              .WithOne(c => c.Region)
+              .HasForeignKey("RegionId")
               .IsRequired();
 
             modelBuilder.Entity<Fueltype>()
@@ -84,11 +92,39 @@ namespace TurboazFetching.Data
               .HasForeignKey("TransmissionId")
               .IsRequired();
 
+            modelBuilder.Entity<Year>()
+              .HasMany<Car>()
+              .WithOne(c => c.Year)
+              .HasForeignKey("YearId")
+              .IsRequired();
+
             modelBuilder.Entity<Entities.Image>()
              .HasOne<Car>()
              .WithMany(c => c.Images)
              .HasForeignKey("CarId")
              .IsRequired();
+
+            #endregion
+
+            #region DataSeeding
+            var Transmissions = Program.GetOptionsFromSelect<Transmission>("q[transmission][]").Result;
+            //var Categories = Program.GetOptionsFromSelect<Category>("q[category][]").Result;
+            var Currencies = Program.GetOptionsFromSelect<Currency>("q[currency]").Result;
+            var Fueltypes = Program.GetOptionsFromSelect<Fueltype>("q[fuel_type][]").Result;
+            var Regions = Program.GetOptionsFromSelect<Entities.Region>("q[region][]").Result;
+            var Colors = Program.GetOptionsFromSelect<Entities.Color>("q[color][]").Result;
+            var Years = Program.GetYears().Result;
+
+            modelBuilder.Entity<Transmission>().HasData(Transmissions);
+            //modelBuilder.Entity<Category>().HasData(Categories);
+            modelBuilder.Entity<Currency>().HasData(Currencies);
+            modelBuilder.Entity<Fueltype>().HasData(Fueltypes);
+            modelBuilder.Entity<Entities.Region>().HasData(Regions);
+            modelBuilder.Entity<Entities.Color>().HasData(Colors);
+            modelBuilder.Entity<Year>().HasData(Years);
+
+            #endregion
+
         }
     }
 }

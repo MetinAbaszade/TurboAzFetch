@@ -11,8 +11,8 @@ namespace TurboazFetching.Entities
         public int Id { get; set; }
         public Brand Brand { get; set; }
         public Model Model { get; set; }
-        public ushort Year { get; set; }
-        public City City { get; set; }
+        public Year Year { get; set; }
+        public Region Region { get; set; }
         public ushort EngineVolume { get; set; }
         public ushort HorsePower { get; set; }
         public Fueltype Fueltype { get; set; }
@@ -29,8 +29,8 @@ namespace TurboazFetching.Entities
 
         public Car() { }
 
-        public Car(int id, Brand brand, Model model, ushort year, 
-                   City city, ushort engineVolume, ushort horsePower, 
+        public Car(int id, Brand brand, Model model, Year year,
+                   Region region, ushort engineVolume, ushort horsePower, 
                    Fueltype fueltype, Transmission transmission, int mileage, 
                    int price, Currency currency, bool creditAvailable, bool barterAvailable, 
                    string comment, List<Image> images, Category category, Color color)
@@ -39,7 +39,7 @@ namespace TurboazFetching.Entities
             Brand = brand;
             Model = model;
             Year = year;
-            City = city;
+            Region = region;
             EngineVolume = engineVolume;
             HorsePower = horsePower;
             Fueltype = fueltype;
