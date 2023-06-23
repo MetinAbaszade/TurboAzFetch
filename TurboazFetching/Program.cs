@@ -3,18 +3,11 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using OpenQA.Selenium;
 using PuppeteerSharp;
-using System;
-using System.Xml.Linq;
 using TurboazFetching.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Net;
-using System.Net.Http;
 using System.Reflection;
-using System.Drawing;
 using TurboazFetching.Entities;
-using Microsoft.VisualBasic.FileIO;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System.Runtime.Intrinsics.X86;
+using System;
 
 namespace TurboazFetching
 {
@@ -64,39 +57,57 @@ namespace TurboazFetching
             }
         }
 
-        public static async void GetAllBrandandModels()
+        public static async Task<List<Model>> GetAllModels(string brandId)
         {
             string Url = "https://turbo.az";
-            var optionvalue = String.Empty;
+            var doc = await DownloadPage(Url);
 
-            var doc = DownloadPage(Url).Result;
+            var models = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[model][]")
+                .Descendants("option").Where(e => e.GetAttributeValue("class", "") == brandId);
 
-            var elements = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[make][]").Descendants("option");
+            var modelList = new List<Model>();
+            int brandIdInt;
+            int.TryParse(brandId, out brandIdInt);
 
-            foreach (var item in elements)
+            foreach (var model in models)
             {
-                optionvalue = item.GetAttributeValue("value", "");
+                var newModel = new Model();
+                var value = model.GetAttributeValue("value", "");
+                        int.TryParse(value, out int valueInt);
 
-                Console.WriteLine("Brand: ");
-                Console.WriteLine("BrandOptionValue: " + optionvalue);
-                Console.WriteLine("InnerHtml: " + item.InnerHtml);
-
-                Console.WriteLine();
-
-                Console.WriteLine("Models: ");
-
-                var models = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[model][]")
-                    .Descendants("option").Where(e => e.GetAttributeValue("class", "") == optionvalue);
-
-                foreach (var model in models)
+                if (value.Contains("group"))
                 {
-                    Console.Write("ModelOptionValue: " + model.GetAttributeValue("value", ""));
-                    Console.WriteLine(" Model: " + model.InnerHtml);
-
+                    var groupNumberString = value.Replace("group", "");
+                    int.TryParse(groupNumberString, out int groupNumberInt);
+                    newModel.Id = groupNumberInt;
+                    newModel.Name = model.InnerHtml;
+                    newModel.BrandId = brandIdInt;
                 }
 
-                Console.WriteLine();
+                else
+                {
+                    var datagroup = model.GetAttributeValue("data-group", "");
+                    if (!string.IsNullOrEmpty(datagroup))
+                    {
+                        int.TryParse(datagroup, out int datagroupInt);
+                        newModel.Id = valueInt;
+                        newModel.Name = model.InnerHtml;
+                        newModel.BrandId = brandIdInt;
+                        newModel.BaseModelId = datagroupInt;
+                    }
+
+                    else
+                    {
+                        newModel.Id = valueInt;
+                        newModel.Name = model.InnerHtml;
+                        newModel.BrandId = brandIdInt;
+                    }
+                }
+
+                modelList.Add(newModel);
             }
+
+            return modelList;
         }
 
         public static async void GetCarsSelenium()
@@ -181,18 +192,11 @@ namespace TurboazFetching
 
                 foreach (var element in productNodes)
                 {
-                    //var Name = await element.QuerySelectorAsync(".products-i__name");
-                    //var Atributes = await element.QuerySelectorAsync(".products-i__attributes");
-                    //var Datetime = await element.QuerySelectorAsync(".products-i__datetime");
                     var CarLink = await element.QuerySelectorAsync(".products-i__link");
 
                     Console.WriteLine($"Car {CarCount++}");
                     Console.WriteLine("CarLink: " + await CarLink?.EvaluateFunctionAsync<string>("node => node.href"));
                     GetSpesificCarPuppeteer(await CarLink?.EvaluateFunctionAsync<string>("node => node.href"));
-                    //Console.WriteLine("Name: " + await Name?.EvaluateFunctionAsync<string>("node => node.innerText"));
-                    //Console.WriteLine("Atributes: " + await Atributes?.EvaluateFunctionAsync<string>("node => node.innerText"));
-                    //Console.WriteLine("Datetime: " + await Datetime?.EvaluateFunctionAsync<string>("node => node.innerText"));
-                    //Console.WriteLine();
                 }
                 Console.WriteLine();
                 Console.WriteLine();
@@ -205,8 +209,6 @@ namespace TurboazFetching
 
             var doc = DownloadPage(url).Result;
             var DecendantDivs = doc.DocumentNode.Descendants("div");
-
-            var test = doc.DocumentNode.InnerHtml;
 
             // Getting Car details: 
             var CarProperties = DecendantDivs.Where(node => node.GetAttributeValue("class", "") == "product-properties__i");
@@ -242,7 +244,7 @@ namespace TurboazFetching
             Console.WriteLine();
         }
 
-        private static T CreateElement<T>(int idValue, string nameValue) where T : new()
+        private static T CreateElement<T>(int id, string value) where T : new()
         {
             T elementObj = new T();
 
@@ -251,8 +253,8 @@ namespace TurboazFetching
 
             if (idProperty != null && nameProperty != null)
             {
-                idProperty.SetValue(elementObj, idValue);
-                nameProperty.SetValue(elementObj, nameValue);
+                idProperty.SetValue(elementObj, id);
+                nameProperty.SetValue(elementObj, value);
             }
 
             return elementObj;
@@ -286,7 +288,7 @@ namespace TurboazFetching
         {
             var Url = $"https://turbo.az";
             var doc = DownloadPage(Url).Result;
-            var OptionValue = String.Empty;
+            var Value = String.Empty;
 
             // List of options inside select:
             var ProductOptions = doc.DocumentNode.Descendants("select")
@@ -298,13 +300,18 @@ namespace TurboazFetching
             }
 
             List<T> elements = new List<T>();
-            int id = 1;
+            int id;
 
             foreach (var Option in ProductOptions)
             {
-                OptionValue = Option.InnerHtml;
-                var NewElement = CreateElement<T>(id++, OptionValue);
-                elements.Add(NewElement);
+                int.TryParse(Option.GetAttributeValue("value", ""), out id);
+                Value = Option.InnerHtml;
+                // Because first element in the select is empty
+                if (id != 0)
+                {
+                    var NewElement = CreateElement<T>(id, Value);
+                    elements.Add(NewElement);
+                }
             }
 
             return elements;
@@ -341,20 +348,64 @@ namespace TurboazFetching
             return Years;
         }
 
+
+
         static async Task Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             AppDbContext dbContext = new AppDbContext();
 
+
+
             // GetCars();
-            // GetAllBrandandModels();
             // GetCarsPuppeteer();
             // GetCarsSelenium();
-            // GetCities();
 
             // https://turbo.az/autos/7026350-bmw-m5
 
             //GetSpesificCarPuppeteer("https://turbo.az/autos/7026350-bmw-m5");
+
+            //// GetBrands:
+            //var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
+            //foreach (var Brand in Brands)
+            //{
+            //    Console.WriteLine("Id: " + Brand.Id);
+            //    Console.WriteLine("Brand Name: " + Brand.Name);
+            //}
+
+            //// GetModels of Brand:
+            //var models = GetAllModels("4").Result;
+            //var baseModels = models.Where((m) => m.IsBaseModel()).ToList(); 
+            //foreach (var baseModel in baseModels)
+            //{
+            //    Console.WriteLine("Model Id: " + baseModel.Id);
+            //    Console.WriteLine("Model Name: " + baseModel.Name);
+            //    var subModels = models.Where((m) => m.BaseModelId == baseModel.Id);
+            //    foreach (var subModel in subModels)
+            //    {
+            //        Console.WriteLine("  Model Id: " + subModel.Id);
+            //        Console.WriteLine("  Model Name: " + subModel.Name);
+            //        Console.WriteLine("  Model BaseModelId: " + subModel.BaseModelId);
+            //    }
+            //}
+
+            // -------------------------
+            var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
+            foreach (var Brand in Brands)
+            {
+                Console.WriteLine("Brand Id: " + Brand.Id);
+                Console.WriteLine("Brand Name: " + Brand.Name);
+
+                var models = GetAllModels(Brand.Id.ToString()).Result;
+                foreach (var model in models)
+                {
+                    Console.WriteLine("Model Id: " + model.Id);
+                    Console.WriteLine("Model Name: " + model.Name);
+                    Console.WriteLine("Model BaseModelId: " + model.BaseModelId);
+                }
+                Console.WriteLine();
+            }
+            // -------------------------
 
             //// GetRegions:
             //var Regions = GetOptionsFromSelect<Entities.Region>("q[region][]").Result;
@@ -364,13 +415,13 @@ namespace TurboazFetching
             //    Console.WriteLine("Region Name: " + Region.Name);
             //}
 
-            // GetYears:
-            var Years = GetYears().Result;
-            foreach (var Year in Years)
-            {
-                Console.WriteLine("Id: " + Year.Id);
-                Console.WriteLine("Year: " + Year.Value);
-            }
+            //// GetYears:
+            //var Years = GetYears().Result;
+            //foreach (var Year in Years)
+            //{
+            //    Console.WriteLine("Id: " + Year.Id);
+            //    Console.WriteLine("Year: " + Year.Value);
+            //}
 
             //// GetCategories:
             //var Categories = GetOptionsFromSelect<Category>("q[category][]").Result;

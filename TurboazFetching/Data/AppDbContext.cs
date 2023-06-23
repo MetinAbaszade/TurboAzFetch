@@ -28,7 +28,8 @@ namespace TurboazFetching.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlServer("Data Source=DESKTOP-G1Q07RP;Initial Catalog=CarUniverse;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
+            optionsBuilder.UseSqlServer("Data Source=METIN-ABASZADE;Initial Catalog=CarUniverse;Integrated Security=True;Connect Timeout=30;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
+            optionsBuilder.EnableSensitiveDataLogging();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -107,6 +108,56 @@ namespace TurboazFetching.Data
             #endregion
 
             #region DataSeeding
+            var Brands = Program.GetOptionsFromSelect<Brand>("q[make][]").Result;
+            var Models = new List<Model>();
+
+            foreach (var brand in Brands)
+            {
+                var newModels = Program.GetAllModels(brand.Id.ToString()).Result;
+                Models.AddRange(newModels);
+            }
+           
+
+            //foreach (var fetchedBrand in fetchedBrands)
+            //{
+            //    var brand = new Brand { Name = fetchedBrand.Name };
+            //    Brands.Add(brand);
+            //    // Keep track of old and new IDs
+            //    brandIdMappings.Add(fetchedBrand.Id, brand.Id);
+
+            //    var fetchedModels = Program.GetAllModels(fetchedBrand.Id.ToString()).Result;
+            //    var baseModels = fetchedModels.Where((m) => m.IsBaseModel());
+            //    var subModels = fetchedModels.Where((m) => !m.IsBaseModel());
+
+            //    foreach (var baseModel in baseModels)
+            //    {
+            //        var model = new Model
+            //        {
+            //            Name = baseModel.Name,
+            //            BrandId = baseModel.BrandId
+            //        };
+            //        Models.Add(model);
+
+            //        if (!modelIdMappings.ContainsKey(baseModel.Id.ToString()))
+            //        {
+            //            // Add the key-value pair to the dictionary
+            //            modelIdMappings.Add(baseModel.Id.ToString(), model.Id);
+            //        }
+            //    }
+
+            //    foreach (var subModel in subModels)
+            //    {
+            //        modelIdMappings.TryGetValue(subModel.BaseModelId.ToString(), out var baseModelId);
+            //        var model = new Model
+            //        {
+            //            Name = subModel.Name,
+            //            BrandId = subModel.BrandId,
+            //            BaseModelId = baseModelId
+            //        };
+            //        Models.Add(model);
+            //    }
+            //}
+
             var Transmissions = Program.GetOptionsFromSelect<Transmission>("q[transmission][]").Result;
             //var Categories = Program.GetOptionsFromSelect<Category>("q[category][]").Result;
             var Currencies = Program.GetOptionsFromSelect<Currency>("q[currency]").Result;
@@ -115,6 +166,11 @@ namespace TurboazFetching.Data
             var Colors = Program.GetOptionsFromSelect<Entities.Color>("q[color][]").Result;
             var Years = Program.GetYears().Result;
 
+           // var model = new Entities.Model(1, "TestModel", Brands[0].Id);
+         
+
+            modelBuilder.Entity<Brand>().HasData(Brands);
+            modelBuilder.Entity<Model>().HasData(Models);
             modelBuilder.Entity<Transmission>().HasData(Transmissions);
             //modelBuilder.Entity<Category>().HasData(Categories);
             modelBuilder.Entity<Currency>().HasData(Currencies);
