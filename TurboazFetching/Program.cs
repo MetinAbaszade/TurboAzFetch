@@ -8,6 +8,9 @@ using System.Net;
 using System.Reflection;
 using TurboazFetching.Entities;
 using System;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Policy;
+using Newtonsoft.Json.Linq;
 
 namespace TurboazFetching
 {
@@ -21,8 +24,6 @@ namespace TurboazFetching
 
             var doc = new HtmlDocument();
             doc.LoadHtml(content);
-
-            var test = doc.DocumentNode.InnerHtml;
 
             return doc;
         }
@@ -57,54 +58,67 @@ namespace TurboazFetching
             }
         }
 
-        public static async Task<List<Model>> GetAllModels(string brandId)
+        public static async Task<List<Model>> GetAllModels(List<Brand> brands)
         {
             string Url = "https://turbo.az";
             var doc = await DownloadPage(Url);
-
-            var models = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[model][]")
-                .Descendants("option").Where(e => e.GetAttributeValue("class", "") == brandId);
-
+            int modelId = 1;
             var modelList = new List<Model>();
-            int brandIdInt;
-            int.TryParse(brandId, out brandIdInt);
+            Dictionary<int, int> modelgroup = new();
 
-            foreach (var model in models)
+            foreach (var brand in brands)
             {
-                var newModel = new Model();
-                var value = model.GetAttributeValue("value", "");
-                        int.TryParse(value, out int valueInt);
+                var models = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[model][]")
+                    .Descendants("option").Where(e => e.GetAttributeValue("class", "") == brand.Id.ToString());
 
-                if (value.Contains("group"))
+                foreach (var model in models)
                 {
-                    var groupNumberString = value.Replace("group", "");
-                    int.TryParse(groupNumberString, out int groupNumberInt);
-                    newModel.Id = groupNumberInt;
-                    newModel.Name = model.InnerHtml;
-                    newModel.BrandId = brandIdInt;
-                }
+                    var newModel = new Model();
+                    var value = model.GetAttributeValue("value", "");
 
-                else
-                {
-                    var datagroup = model.GetAttributeValue("data-group", "");
-                    if (!string.IsNullOrEmpty(datagroup))
+                    if (value.Contains("group"))
                     {
-                        int.TryParse(datagroup, out int datagroupInt);
-                        newModel.Id = valueInt;
+                        var groupNumberString = value.Replace("group", "");
+                        int.TryParse(groupNumberString, out int groupNumberInt);
+
+                        // Check if the key already exists in the dictionary
+                        if (!modelgroup.ContainsKey(groupNumberInt))
+                        {
+                            // Add the key-value pair to the dictionary
+                            modelgroup.Add(groupNumberInt, modelId);
+                        }
+                        newModel.Id = modelId;
                         newModel.Name = model.InnerHtml;
-                        newModel.BrandId = brandIdInt;
-                        newModel.BaseModelId = datagroupInt;
+                        newModel.BrandId = brand.Id;
                     }
 
                     else
                     {
-                        newModel.Id = valueInt;
-                        newModel.Name = model.InnerHtml;
-                        newModel.BrandId = brandIdInt;
+                        var datagroup = model.GetAttributeValue("data-group", "");
+                        if (!string.IsNullOrEmpty(datagroup))
+                        {
+                            int.TryParse(datagroup, out int datagroupInt);
+                            newModel.Id = modelId;
+                            newModel.Name = model.InnerHtml;
+                            newModel.BrandId = brand.Id;
+                            var baseModelId = modelgroup[datagroupInt];
+                            newModel.BaseModelId = baseModelId;
+                        }
+
+                        else
+                        {
+                            newModel.Id = modelId;
+                            newModel.Name = model.InnerHtml;
+                            newModel.BrandId = brand.Id;
+                        }
                     }
+
+                    modelId++;
+                    modelList.Add(newModel);
                 }
 
-                modelList.Add(newModel);
+                // Clear the existing dictionary
+                modelgroup.Clear();
             }
 
             return modelList;
@@ -173,7 +187,6 @@ namespace TurboazFetching
 
             // Download the latest version of Chromium
             await new BrowserFetcher().DownloadAsync();
-
             var launchOptions = new LaunchOptions { Headless = true };
             using var browser = await Puppeteer.LaunchAsync(launchOptions);
             using var page = await browser.NewPageAsync();
@@ -206,7 +219,6 @@ namespace TurboazFetching
 
         public static async void GetSpesificCarPuppeteer(string url)
         {
-
             var doc = DownloadPage(url).Result;
             var DecendantDivs = doc.DocumentNode.Descendants("div");
 
@@ -282,7 +294,6 @@ namespace TurboazFetching
             }
         }
 
-
         // Downlods options inside select(Category, Color, Transmission, Fueltype...) and return list of these elements
         public static async Task<List<T>> GetOptionsFromSelect<T>(string selectname) where T : new()
         {
@@ -348,122 +359,220 @@ namespace TurboazFetching
             return Years;
         }
 
+        public static string GetBackgroundUrlFromStyle(HtmlNode htmlNode)
+        {
+            // Get the style attribute value from the htmlNode
+            string logoNodeStyle = htmlNode.GetAttributeValue("style", "");
+            // Extract the URL from the logoNodeStyle using string manipulation
+            int urlStartIndex = logoNodeStyle.IndexOf("url(") + 4;
+            int urlEndIndex = logoNodeStyle.IndexOf(")", urlStartIndex);
+            string backgroundUrl = logoNodeStyle.Substring(urlStartIndex, urlEndIndex - urlStartIndex);
 
+            return backgroundUrl;
+        }
+
+        public static AutoSalon GetAutoSalonDetails(string url)
+        {
+            var fullurl = "https://turbo.az/" + url;
+            var doc = DownloadPage(fullurl).Result;
+
+            HtmlNode salonCoverNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--cover')]");
+            HtmlNode salonLogoNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--logo')]");
+            HtmlNode salonTitleNode = doc.DocumentNode.SelectSingleNode("//h1[contains(@class, 'shop--title')]").SelectSingleNode(".//a");
+            HtmlNode salonSloganNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--special-offer')]");
+            HtmlNode salonDescriptionNode = doc.DocumentNode.SelectSingleNode("//h2[contains(@class, 'shop--description')]");
+            HtmlNode locationNode = doc.DocumentNode.SelectSingleNode("//a[contains(@class, 'shop--location')]");
+            HtmlNodeCollection phoneNumberNodes = doc.DocumentNode.SelectNodes("//a[contains(@class, 'shop-phones--number')]");
+
+            string coverUrl = GetBackgroundUrlFromStyle(salonCoverNode);
+            string logoUrl = GetBackgroundUrlFromStyle(salonLogoNode);
+            string title = salonTitleNode.InnerHtml;
+            string description = salonDescriptionNode.InnerHtml;
+            string location = locationNode.InnerHtml;
+            string locationUrl = locationNode.GetAttributeValue("href", "");
+            string slogan = WebUtility.HtmlDecode(salonSloganNode.InnerHtml);
+
+            JArray numbersArray = new JArray();
+            foreach (var phoneNumberNode in phoneNumberNodes)
+            {
+                string number = phoneNumberNode.InnerHtml;
+
+                // Add the number to the JSON array
+                numbersArray.Add(number);
+            }
+            // Convert the JSON number array to a string
+            string numberJson = numbersArray.ToString();
+
+            AutoSalon autoSalon = new()
+            {
+                CoverUrl = coverUrl,
+                LogoUrl = logoUrl,
+                Title = title,
+                Slogan = slogan,
+                Description = description,
+                Location = location,
+                LocationUrl = locationUrl,
+                Number = numberJson
+            };
+
+            return autoSalon;
+        }
+
+        public static async Task<List<AutoSalon>> GetAutoSalons()
+        {
+            var url = "https://ru.turbo.az/avtosalonlar";
+            var doc = DownloadPage(url).Result;
+            var Links = doc.DocumentNode.Descendants("a");
+
+            List<AutoSalon> autoSalons = new();
+            int autoSalonId = 1;
+
+            // Getting AutoSalon details: 
+            var autoSalonLinks = Links.Where(node => node.GetAttributeValue("class", "").Contains("shops-i "));
+            foreach (var autosalonlink in autoSalonLinks)
+            {
+                var link = autosalonlink.GetAttributeValue("href", "");
+                var autoSalon = GetAutoSalonDetails(link);
+                autoSalon.Id = autoSalonId++;
+                autoSalons.Add(autoSalon);
+            }
+
+            return autoSalons;
+        }
 
         static async Task Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             AppDbContext dbContext = new AppDbContext();
 
-
+            #region Testing Db Brand and Models
+            //var Brands = dbContext.Brands.Include((b) => b.Models).ToList();
+            //foreach (var brand in Brands)
+            //{
+            //    Console.WriteLine("Brand Id: " + brand.Id);
+            //    Console.WriteLine("Brand Name: " + brand.Name);
+            //    Console.WriteLine("\n-------- Models --------\n");
+            //    foreach (var model in brand.Models)
+            //    {
+            //        Console.WriteLine("Model Id: " + model.Id);
+            //        Console.WriteLine("Model Name: " + model.Name);
+            //        Console.WriteLine("Model BrandId: " + model.BrandId);
+            //        Console.WriteLine("Model BaseModelId: " + model.BaseModelId);
+            //    }
+            //    Console.WriteLine();
+            //}
+            #endregion
 
             // GetCars();
             // GetCarsPuppeteer();
             // GetCarsSelenium();
 
+            var autoSalons = await GetAutoSalons();
+            foreach (var autoSalon in autoSalons)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Cover Url: " + autoSalon.CoverUrl);
+                Console.WriteLine("Logo Url: " + autoSalon.LogoUrl);
+                Console.WriteLine("Title: " + autoSalon.Title);
+                Console.WriteLine("Slogan: " + autoSalon.Slogan);
+                Console.WriteLine("Description: " + autoSalon.Description);
+                Console.WriteLine("Location: " + autoSalon.Location);
+                Console.WriteLine("Location Link: " + autoSalon.LocationUrl);
+                Console.WriteLine("Numbers: " + autoSalon.Number);
+                Console.WriteLine();
+            }
+
             // https://turbo.az/autos/7026350-bmw-m5
 
             //GetSpesificCarPuppeteer("https://turbo.az/autos/7026350-bmw-m5");
 
-            //// GetBrands:
+            #region GetBrands
             //var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
-            //foreach (var Brand in Brands)
+
+            //foreach (var brand in Brands)
             //{
-            //    Console.WriteLine("Id: " + Brand.Id);
-            //    Console.WriteLine("Brand Name: " + Brand.Name);
+            //    Console.WriteLine("Brand Id " + brand.Id);
+            //    Console.WriteLine("Brand Name " + brand.Name);
+            //    Console.WriteLine();
             //}
+            #endregion
 
-            //// GetModels of Brand:
-            //var models = GetAllModels("4").Result;
-            //var baseModels = models.Where((m) => m.IsBaseModel()).ToList(); 
-            //foreach (var baseModel in baseModels)
+            #region GetModels of All Brands
+            //var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
+            //var Models = GetAllModels(Brands).Result;
+
+            //foreach (var model in Models)
             //{
-            //    Console.WriteLine("Model Id: " + baseModel.Id);
-            //    Console.WriteLine("Model Name: " + baseModel.Name);
-            //    var subModels = models.Where((m) => m.BaseModelId == baseModel.Id);
-            //    foreach (var subModel in subModels)
-            //    {
-            //        Console.WriteLine("  Model Id: " + subModel.Id);
-            //        Console.WriteLine("  Model Name: " + subModel.Name);
-            //        Console.WriteLine("  Model BaseModelId: " + subModel.BaseModelId);
-            //    }
+            //    Console.WriteLine("Model Id " + model.Id);
+            //    Console.WriteLine("Model Name " + model.Name);
+            //    Console.WriteLine("Model BrandId " + model.BrandId);
+            //    Console.WriteLine("Model BaseModelId " + model.BaseModelId);
+            //    Console.WriteLine();
             //}
+            #endregion
 
-            // -------------------------
-            var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
-            foreach (var Brand in Brands)
-            {
-                Console.WriteLine("Brand Id: " + Brand.Id);
-                Console.WriteLine("Brand Name: " + Brand.Name);
-
-                var models = GetAllModels(Brand.Id.ToString()).Result;
-                foreach (var model in models)
-                {
-                    Console.WriteLine("Model Id: " + model.Id);
-                    Console.WriteLine("Model Name: " + model.Name);
-                    Console.WriteLine("Model BaseModelId: " + model.BaseModelId);
-                }
-                Console.WriteLine();
-            }
-            // -------------------------
-
-            //// GetRegions:
+            #region GetRegions
             //var Regions = GetOptionsFromSelect<Entities.Region>("q[region][]").Result;
             //foreach (var Region in Regions)
             //{
             //    Console.WriteLine("Id: " + Region.Id);
             //    Console.WriteLine("Region Name: " + Region.Name);
             //}
+            #endregion
 
-            //// GetYears:
+            #region GetYears
             //var Years = GetYears().Result;
             //foreach (var Year in Years)
             //{
             //    Console.WriteLine("Id: " + Year.Id);
             //    Console.WriteLine("Year: " + Year.Value);
             //}
+            #endregion
 
-            //// GetCategories:
+            #region GetCategories
             //var Categories = GetOptionsFromSelect<Category>("q[category][]").Result;
             //foreach (var Category in Categories)
             //{
             //    Console.WriteLine("Id: " + Category.Id);
             //    Console.WriteLine("Category Name: " + Category.Name);
             //}
+            #endregion
 
-            //// GetColors:
+            #region GetColors
             //var Colors = GetOptionsFromSelect<Entities.Color>("q[color][]").Result;
             //foreach (var Color in Colors)
             //{
             //    Console.WriteLine("Id: " + Color.Id);
             //    Console.WriteLine("Color Name: " + Color.Name);
             //}
+            #endregion
 
-            //// GetFueltypes:
+            #region GetFueltypes
             //var Fueltypes = GetOptionsFromSelect<Fueltype>("q[fuel_type][]").Result;
             //foreach (var Fueltype in Fueltypes)
             //{
             //    Console.WriteLine("Id: " + Fueltype.Id);
             //    Console.WriteLine("Transmission Name: " + Fueltype.Name);
             //}
+            #endregion
 
-            //// GetTransmissions:
+            #region GetTransmissions
             //var Transmissions = GetOptionsFromSelect<Transmission>("q[transmission][]").Result;
             //foreach (var Transmission in Transmissions)
             //{
             //    Console.WriteLine("Id: " + Transmission.Id);
             //    Console.WriteLine("Transmission Name: " + Transmission.Name);
             //}
+            #endregion
 
-            //// GetCurrencies:
+            #region GetCurrencies
             //var Currencies = GetOptionsFromSelect<Currency>("q[currency]").Result;
             //foreach (var Currency in Currencies)
             //{
             //    Console.WriteLine("Id: " + Currency.Id);
             //    Console.WriteLine("Currency Name: " + Currency.Name);
             //}
-
-            // GetImagesofCarandCopytoFile("https://turbo.az/autos/7026350-bmw-m5");
+            #endregion
 
             Console.ReadLine();
         }
