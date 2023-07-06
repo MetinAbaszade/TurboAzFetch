@@ -13,9 +13,8 @@ namespace TurboazFetching.Entities
 
         public Year() { }
 
-        public Year(int id, ushort value)
-        {
-            Id = id;
+        public Year(ushort value)
+        { 
             Value = value;
         }
     }

@@ -9,14 +9,8 @@ namespace TurboazFetching.Entities
     public class Color
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public List<ColorLocale> ColorLocales { get; set; } = new();
 
         public Color() {}
-
-        public Color(int id, string name)
-        {
-            Id = id;
-            Name = name;
-        }
     }
 }

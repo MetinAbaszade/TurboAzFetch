@@ -9,15 +9,14 @@ namespace TurboazFetching.Entities
     public class Model
     {
         public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int BrandId { get; set; }
-        public int? BaseModelId { get; set; }
+        public string Name { get; set; } = string.Empty; 
+        public Model BaseModel { get; set; }
 
         public Model() { }
 
         public bool IsBaseModel()
         {
-            return !BaseModelId.HasValue;
+            return !(BaseModel == null);
         }
     }
 }

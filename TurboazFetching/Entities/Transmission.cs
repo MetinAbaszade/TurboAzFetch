@@ -9,14 +9,8 @@ namespace TurboazFetching.Entities
     public class Transmission
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public List<TransmissionLocale> TransmissionLocales { get; set; } = new();
 
         public Transmission() { }
-
-        public Transmission(int id, string name)
-        {
-            Id = id;
-            Name = name;
-        }
     }
 }

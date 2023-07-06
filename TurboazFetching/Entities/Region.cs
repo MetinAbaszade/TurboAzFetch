@@ -9,13 +9,8 @@ namespace TurboazFetching.Entities
     public class Region
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public List<RegionLocale> RegionLocales { get; set; } = new();
 
         public Region() {}
-
-        public Region(string name)
-        {
-            Name = name;
-        }
     }
 }

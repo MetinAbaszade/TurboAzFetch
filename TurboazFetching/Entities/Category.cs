@@ -9,16 +9,15 @@ namespace TurboazFetching.Entities
     public class Category
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public Image Image { get; set; }
+        public Image Image { get; set; } 
+        public List<CategoryLocale> CategoryLocales { get; set; } = new();
 
         public Category() {}
 
-        public Category(int id, string name, Image image)
+        public Category(int ıd, CategoryLocale categoryLocale, Image ımage)
         {
-            Id = id;
-            Name = name;
-            Image = image;
+            Id = ıd;
+            Image = ımage;
         }
     }
 }

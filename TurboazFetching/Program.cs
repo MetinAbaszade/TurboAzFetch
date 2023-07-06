@@ -11,6 +11,9 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Policy;
 using Newtonsoft.Json.Linq;
+using System.Drawing;
+using System.Dynamic;
+using System.Reflection.Emit;
 
 namespace TurboazFetching
 {
@@ -56,72 +59,6 @@ namespace TurboazFetching
                     Console.WriteLine();
                 }
             }
-        }
-
-        public static async Task<List<Model>> GetAllModels(List<Brand> brands)
-        {
-            string Url = "https://turbo.az";
-            var doc = await DownloadPage(Url);
-            int modelId = 1;
-            var modelList = new List<Model>();
-            Dictionary<int, int> modelgroup = new();
-
-            foreach (var brand in brands)
-            {
-                var models = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[model][]")
-                    .Descendants("option").Where(e => e.GetAttributeValue("class", "") == brand.Id.ToString());
-
-                foreach (var model in models)
-                {
-                    var newModel = new Model();
-                    var value = model.GetAttributeValue("value", "");
-
-                    if (value.Contains("group"))
-                    {
-                        var groupNumberString = value.Replace("group", "");
-                        int.TryParse(groupNumberString, out int groupNumberInt);
-
-                        // Check if the key already exists in the dictionary
-                        if (!modelgroup.ContainsKey(groupNumberInt))
-                        {
-                            // Add the key-value pair to the dictionary
-                            modelgroup.Add(groupNumberInt, modelId);
-                        }
-                        newModel.Id = modelId;
-                        newModel.Name = model.InnerHtml;
-                        newModel.BrandId = brand.Id;
-                    }
-
-                    else
-                    {
-                        var datagroup = model.GetAttributeValue("data-group", "");
-                        if (!string.IsNullOrEmpty(datagroup))
-                        {
-                            int.TryParse(datagroup, out int datagroupInt);
-                            newModel.Id = modelId;
-                            newModel.Name = model.InnerHtml;
-                            newModel.BrandId = brand.Id;
-                            var baseModelId = modelgroup[datagroupInt];
-                            newModel.BaseModelId = baseModelId;
-                        }
-
-                        else
-                        {
-                            newModel.Id = modelId;
-                            newModel.Name = model.InnerHtml;
-                            newModel.BrandId = brand.Id;
-                        }
-                    }
-
-                    modelId++;
-                    modelList.Add(newModel);
-                }
-
-                // Clear the existing dictionary
-                modelgroup.Clear();
-            }
-
-            return modelList;
         }
 
         public static async void GetCarsSelenium()
@@ -256,19 +193,57 @@ namespace TurboazFetching
             Console.WriteLine();
         }
 
-        private static T CreateElement<T>(int id, string value) where T : new()
+        private static DataType CreateElement<DataType, LocaleType>(Dictionary<Language, string> languageValuePairs) where DataType : new() where LocaleType : new()
         {
-            T elementObj = new T();
+            // Create a new instance of DataType
+            DataType elementObj = new DataType();
 
-            PropertyInfo idProperty = typeof(T).GetProperty("Id");
-            PropertyInfo nameProperty = typeof(T).GetProperty("Name");
+            // Get the name of the property which will contain the list of LocaleType instances
+            string localePropertyName = typeof(LocaleType).Name + "s";
 
-            if (idProperty != null && nameProperty != null)
+            string dataTypeName = typeof(DataType).Name;
+
+            // Get the property info for relevant properties on DataType and LocaleType
+            PropertyInfo localeListProperty = typeof(DataType).GetProperty(localePropertyName);
+
+            // Initialize list for LocaleType instances
+            List<LocaleType> localeList = new List<LocaleType>();
+
+            // Iterate over each language-value pair in the provided dictionary
+            foreach (var kvp in languageValuePairs)
             {
-                idProperty.SetValue(elementObj, id);
-                nameProperty.SetValue(elementObj, value);
+                // Create a new instance of LocaleType
+                LocaleType localeObj = new LocaleType();
+
+                // Get the property info for relevant properties on LocaleType
+                PropertyInfo nameLocaleProperty = typeof(LocaleType).GetProperty("Name");
+                PropertyInfo languageLocaleProperty = typeof(LocaleType).GetProperty("Language");
+                PropertyInfo parentLocaleProperty = typeof(LocaleType).GetProperty(dataTypeName);
+
+                // Set the Id, Name, and Language properties on the LocaleType instance
+                if (nameLocaleProperty != null && languageLocaleProperty != null)
+                {
+                    nameLocaleProperty.SetValue(localeObj, kvp.Value);
+                    languageLocaleProperty.SetValue(localeObj, kvp.Key);
+                }
+
+                // Set the Parent property on the LocaleType instance to point to the DataType instance
+                if (parentLocaleProperty != null)
+                {
+                    parentLocaleProperty.SetValue(localeObj, elementObj);
+                }
+
+                // Add the LocaleType instance to the list
+                localeList.Add(localeObj);
             }
 
+            // Set the list property on the DataType instance to the list of LocaleType instances
+            if (localeListProperty != null)
+            {
+                localeListProperty.SetValue(elementObj, localeList);
+            }
+
+            // Return the DataType instance
             return elementObj;
         }
 
@@ -295,41 +270,78 @@ namespace TurboazFetching
         }
 
         // Downlods options inside select(Category, Color, Transmission, Fueltype...) and return list of these elements
-        public static async Task<List<T>> GetOptionsFromSelect<T>(string selectname) where T : new()
+        public static async Task<List<DataType>> GetOptionsFromSelect<DataType, LocaleType>(string selectname) where DataType : new() where LocaleType : new()
         {
-            var Url = $"https://turbo.az";
-            var doc = DownloadPage(Url).Result;
-            var Value = String.Empty;
+            CancellationTokenSource cancellationToken = new();
+            SeedData.StartAnimation(cancellationToken.Token, $"Seeding {selectname}...");
+
+            Language azLanguage = new Language()
+            {
+                LanguageName = "Azerbaijany",
+                DisplayName = "Az"
+            };
+            Language ruLanguage = new Language()
+            {
+                LanguageName = "Russian",
+                DisplayName = "Ru"
+            };
+
+            // Downloading options in AZ language:
+            var azUrl = $"https://turbo.az";
+            var azDoc = DownloadPage(azUrl).Result;
 
             // List of options inside select:
-            var ProductOptions = doc.DocumentNode.Descendants("select")
+            var productOptionsAZ = azDoc.DocumentNode.Descendants("select")
                 .FirstOrDefault(e => e.GetAttributeValue("name", "") == selectname)?.Descendants("option");
-
-            if (ProductOptions == null)
+            if (productOptionsAZ == null)
             {
                 throw new Exception($"Could not find select with specified name: {selectname}");
             }
 
-            List<T> elements = new List<T>();
-            int id;
 
-            foreach (var Option in ProductOptions)
+            // Downloading options in Ru language:
+            var ruUrl = $"https://ru.turbo.az";
+            var ruDoc = DownloadPage(ruUrl).Result;
+
+            // List of options inside select:
+            var productOptionsRU = ruDoc.DocumentNode.Descendants("select")
+                .FirstOrDefault(e => e.GetAttributeValue("name", "") == selectname)?.Descendants("option");
+            if (productOptionsRU == null)
             {
-                int.TryParse(Option.GetAttributeValue("value", ""), out id);
-                Value = Option.InnerHtml;
+                throw new Exception($"Could not find select with specified name in Russian language: {selectname}");
+            }
+
+            List<DataType> elements = new List<DataType>();
+
+            foreach (var productOptionAZ in productOptionsAZ)
+            {
+                var value = productOptionAZ.GetAttributeValue("value", "");
+                var productOptionRU = productOptionsRU.FirstOrDefault(o => o.GetAttributeValue("value", "") == value);
+
+                var azInnerHtml = productOptionAZ.InnerHtml;
+                var ruInnerHtml = productOptionRU.InnerHtml;
+
+                Dictionary<Language, string> languageValuePairs = new();
+                languageValuePairs.Add(azLanguage, azInnerHtml);
+                languageValuePairs.Add(ruLanguage, ruInnerHtml);
+
                 // Because first element in the select is empty
-                if (id != 0)
+                if (!string.IsNullOrEmpty(value))
                 {
-                    var NewElement = CreateElement<T>(id, Value);
-                    elements.Add(NewElement);
+                    var newElement = CreateElement<DataType, LocaleType>(languageValuePairs);
+                    elements.Add(newElement);
                 }
             }
 
+            cancellationToken.Cancel();
             return elements;
         }
 
         public static async Task<List<Year>> GetYears()
         {
+            CancellationTokenSource cancellationToken = new();
+            SeedData.StartAnimation(cancellationToken.Token, "Seeding Years...");
+
             var Url = $"https://turbo.az";
             var doc = DownloadPage(Url).Result;
             var OptionValue = String.Empty;
@@ -343,20 +355,143 @@ namespace TurboazFetching
                 throw new Exception($"Could not find select with specified name q[year_from]");
             }
 
-            List<Year> Years = new List<Year>();
-            int id = 1;
+            List<Year> years = new List<Year>();
 
             foreach (var Option in ProductOptions)
             {
                 OptionValue = Option.InnerHtml;
                 if (!string.IsNullOrEmpty(Option.InnerHtml))
                 {
-                    var Year = new Year(id++, ushort.Parse(OptionValue));
-                    Years.Add(Year);
+                    var year = new Year(ushort.Parse(OptionValue));
+                    years.Add(year);
                 }
             }
 
-            return Years;
+            cancellationToken.Cancel();
+            return years;
+        }
+
+        public static async Task<List<Currency>> GetCurrencies()
+        {
+            CancellationTokenSource cancellationToken = new();
+            SeedData.StartAnimation(cancellationToken.Token, "Seeding Currencies...");
+
+            var url = $"https://turbo.az";
+            var doc = DownloadPage(url).Result;
+            var optionValue = String.Empty;
+
+            // List of options inside select:
+            var productOptions = doc.DocumentNode.Descendants("select")
+                .FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[currency]")?.Descendants("option");
+
+            if (productOptions == null)
+            {
+                throw new Exception($"Could not find select with specified name q[currency]");
+            }
+
+            List<Currency> currencies = new List<Currency>();
+
+            foreach (var productOption in productOptions)
+            {
+                optionValue = productOption.InnerHtml;
+                if (!string.IsNullOrEmpty(productOption.InnerHtml))
+                {
+                    var currency = new Currency(optionValue);
+                    currencies.Add(currency);
+                }
+            }
+
+            cancellationToken.Cancel();
+            return currencies;
+        }
+
+        public static async Task<List<Brand>> GetBrands()   
+        {
+            CancellationTokenSource cancellationToken = new();
+            SeedData.StartAnimation(cancellationToken.Token, "Seeding Brands...");
+
+            var url = $"https://turbo.az";
+            var doc = DownloadPage(url).Result;
+            var optionValue = String.Empty;
+            var optionInnerHtml = String.Empty;
+
+            // List of options inside select:
+            var productOptions = doc.DocumentNode.Descendants("select")
+                .FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[make][]")?.Descendants("option");
+
+            if (productOptions == null)
+            {
+                throw new Exception($"Could not find select with specified name q[currency]");
+            }
+
+            List<Brand> brands = new();
+
+            foreach (var option in productOptions)
+            {
+                optionInnerHtml = option.InnerHtml;
+                optionValue = option.GetAttributeValue("value", "");
+                int.TryParse(optionValue, out int optionValueInt);
+                if (!string.IsNullOrEmpty(option.InnerHtml))
+                {
+                    var brand = new Brand(optionInnerHtml);
+                    var models = GetModels(optionValueInt).Result;
+                    brand.Models = models;
+                    brands.Add(brand);
+                }
+            }
+
+            cancellationToken.Cancel();
+            return brands;
+        }
+
+        public static async Task<List<Model>> GetModels(int brandId)
+        {
+            string Url = "https://turbo.az";
+            var doc = await DownloadPage(Url);
+            var modelList = new List<Model>();
+            Dictionary<int, Model> modelgroup = new();
+
+            var models = doc.DocumentNode.Descendants("select").FirstOrDefault(e => e.GetAttributeValue("name", "") == "q[model][]")
+                .Descendants("option").Where(e => e.GetAttributeValue("class", "") == brandId.ToString());
+
+            foreach (var model in models)
+            {
+                var newModel = new Model();
+                var value = model.GetAttributeValue("value", "");
+
+                if (value.Contains("group"))
+                {
+                    var groupNumberString = value.Replace("group", "");
+                    int.TryParse(groupNumberString, out int groupNumberInt);
+
+                    // Check if the key already exists in the dictionary
+                    if (!modelgroup.ContainsKey(groupNumberInt))
+                    {
+                        // Add the key-value pair to the dictionary
+                        modelgroup.Add(groupNumberInt, newModel);
+                    }
+                    newModel.Name = model.InnerHtml;
+                }
+
+                else
+                {
+                    var datagroup = model.GetAttributeValue("data-group", "");
+                    if (!string.IsNullOrEmpty(datagroup))
+                    {
+                        int.TryParse(datagroup, out int datagroupInt);
+
+                        newModel.Name = model.InnerHtml;
+                        newModel.BaseModel = modelgroup[datagroupInt];
+                    }
+                    else
+                    {
+                        newModel.Name = model.InnerHtml;
+                    }
+                }
+                modelList.Add(newModel);
+            }
+
+            return modelList;
         }
 
         public static string GetBackgroundUrlFromStyle(HtmlNode htmlNode)
@@ -373,24 +508,46 @@ namespace TurboazFetching
 
         public static AutoSalon GetAutoSalonDetails(string url)
         {
-            var fullurl = "https://turbo.az/" + url;
-            var doc = DownloadPage(fullurl).Result;
+            Language azLanguage = new Language()
+            {
+                LanguageName = "Azerbaijany",
+                DisplayName = "Az"
+            };
+            Language ruLanguage = new Language()
+            {
+                LanguageName = "Russian",
+                DisplayName = "Ru"
+            };
 
-            HtmlNode salonCoverNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--cover')]");
-            HtmlNode salonLogoNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--logo')]");
-            HtmlNode salonTitleNode = doc.DocumentNode.SelectSingleNode("//h1[contains(@class, 'shop--title')]").SelectSingleNode(".//a");
-            HtmlNode salonSloganNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--special-offer')]");
-            HtmlNode salonDescriptionNode = doc.DocumentNode.SelectSingleNode("//h2[contains(@class, 'shop--description')]");
-            HtmlNode locationNode = doc.DocumentNode.SelectSingleNode("//a[contains(@class, 'shop--location')]");
-            HtmlNodeCollection phoneNumberNodes = doc.DocumentNode.SelectNodes("//a[contains(@class, 'shop-phones--number')]");
+            var fullUrlAZ = "https://turbo.az/" + url;
+            var docAZ = DownloadPage(fullUrlAZ).Result;
+
+            HtmlNode salonCoverNode = docAZ.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--cover')]");
+            HtmlNode salonLogoNode = docAZ.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--logo')]");
+            HtmlNode salonTitleNode = docAZ.DocumentNode.SelectSingleNode("//h1[contains(@class, 'shop--title')]").SelectSingleNode(".//a");
+            HtmlNode salonSloganAzNode = docAZ.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--special-offer')]");
+            HtmlNode salonDescriptionAzNode = docAZ.DocumentNode.SelectSingleNode("//h2[contains(@class, 'shop--description')]");
+            HtmlNode salonLocationAzNode = docAZ.DocumentNode.SelectSingleNode("//a[contains(@class, 'shop--location')]");
+            HtmlNodeCollection phoneNumberNodes = docAZ.DocumentNode.SelectNodes("//a[contains(@class, 'shop-phones--number')]");
 
             string coverUrl = GetBackgroundUrlFromStyle(salonCoverNode);
             string logoUrl = GetBackgroundUrlFromStyle(salonLogoNode);
             string title = salonTitleNode.InnerHtml;
-            string description = salonDescriptionNode.InnerHtml;
-            string location = locationNode.InnerHtml;
-            string locationUrl = locationNode.GetAttributeValue("href", "");
-            string slogan = WebUtility.HtmlDecode(salonSloganNode.InnerHtml);
+            string sloganAZ = WebUtility.HtmlDecode(salonSloganAzNode.InnerHtml);
+            string descriptionAZ = salonDescriptionAzNode.InnerHtml;
+            string locationAZ = salonLocationAzNode.InnerHtml;
+            string locationUrl = salonLocationAzNode.GetAttributeValue("href", "");
+
+            var fullUrlRU = "https://ru.turbo.az/" + url;
+            var docRU = DownloadPage(fullUrlRU).Result;
+
+            HtmlNode salonSloganRuNode = docRU.DocumentNode.SelectSingleNode("//div[contains(@class, 'shop--special-offer')]");
+            HtmlNode salonDescriptionRuNode = docRU.DocumentNode.SelectSingleNode("//h2[contains(@class, 'shop--description')]");
+            HtmlNode salonLocationRuNode = docRU.DocumentNode.SelectSingleNode("//a[contains(@class, 'shop--location')]");
+
+            string sloganRU = WebUtility.HtmlDecode(salonSloganRuNode.InnerHtml);
+            string descriptionRU = salonDescriptionRuNode.InnerHtml;
+            string locationRU = salonLocationRuNode.InnerHtml;
 
             JArray numbersArray = new JArray();
             foreach (var phoneNumberNode in phoneNumberNodes)
@@ -403,16 +560,35 @@ namespace TurboazFetching
             // Convert the JSON number array to a string
             string numberJson = numbersArray.ToString();
 
-            AutoSalon autoSalon = new()
+            var autoSalon = new AutoSalon();
+
+            var autoSalonLocaleAz = new AutoSalonLocale()
             {
-                CoverUrl = coverUrl,
-                LogoUrl = logoUrl,
-                Title = title,
-                Slogan = slogan,
-                Description = description,
-                Location = location,
-                LocationUrl = locationUrl,
-                Number = numberJson
+                Slogan = sloganAZ,
+                Location = locationAZ,
+                Description = descriptionAZ,
+                Language = azLanguage,
+                AutoSalon = autoSalon
+            };
+
+            var autoSalonLocaleRu = new AutoSalonLocale()
+            {
+                Slogan = sloganRU,
+                Location = locationRU,
+                Description = descriptionRU,
+                Language = ruLanguage,
+                AutoSalon = autoSalon
+            };
+
+            autoSalon.CoverUrl = coverUrl;
+
+            autoSalon.LogoUrl = logoUrl;
+            autoSalon.Title = title;
+            autoSalon.LocationUrl = locationUrl;
+            autoSalon.Number = numberJson;
+            autoSalon.AutoSalonLocales = new() {
+                 autoSalonLocaleAz,
+                 autoSalonLocaleRu
             };
 
             return autoSalon;
@@ -420,24 +596,88 @@ namespace TurboazFetching
 
         public static async Task<List<AutoSalon>> GetAutoSalons()
         {
-            var url = "https://ru.turbo.az/avtosalonlar";
+            CancellationTokenSource cancellationToken = new();
+            SeedData.StartAnimation(cancellationToken.Token, "Seeding AutoSalons...");
+
+            var url = "https://turbo.az/avtosalonlar";
             var doc = DownloadPage(url).Result;
-            var Links = doc.DocumentNode.Descendants("a");
+            var links = doc.DocumentNode.Descendants("a");
 
             List<AutoSalon> autoSalons = new();
-            int autoSalonId = 1;
 
             // Getting AutoSalon details: 
-            var autoSalonLinks = Links.Where(node => node.GetAttributeValue("class", "").Contains("shops-i "));
+            var autoSalonLinks = links.Where(node => node.GetAttributeValue("class", "").Contains("shops-i "));
             foreach (var autosalonlink in autoSalonLinks)
             {
                 var link = autosalonlink.GetAttributeValue("href", "");
                 var autoSalon = GetAutoSalonDetails(link);
-                autoSalon.Id = autoSalonId++;
                 autoSalons.Add(autoSalon);
             }
 
+            cancellationToken.Cancel();
             return autoSalons;
+        }
+
+        public static List<Feature> GetFetures()
+        {
+            CancellationTokenSource cancellationToken = new();
+            SeedData.StartAnimation(cancellationToken.Token, "Seeding Features...");
+
+            Language azLanguage = new Language()
+            {
+                LanguageName = "Azerbaijany",
+                DisplayName = "Az"
+            };
+            Language ruLanguage = new Language()
+            {
+                LanguageName = "Russian",
+                DisplayName = "Ru"
+            };
+
+            var azUrl = "https://turbo.az/";
+            var azDoc = DownloadPage(azUrl).Result;
+            var allLabelsAz = azDoc.DocumentNode.Descendants("label");
+            var featureLabelsAz = allLabelsAz.Where(node => node.GetAttributeValue("class", "").Contains("tz-text "));
+
+            var ruUrl = "https://ru.turbo.az/";
+            var ruDoc = DownloadPage(ruUrl).Result;
+            var allLabelsRu = ruDoc.DocumentNode.Descendants("label");
+            var featureLabelsRu = allLabelsRu.Where(node => node.GetAttributeValue("class", "").Contains("tz-text "));
+
+            List<Feature> features = new();
+
+            foreach (var featureLabelAz in featureLabelsAz)
+            {
+                var featureNameAz = featureLabelAz.InnerHtml;
+                var valuofForTagAz = featureLabelAz.GetAttributeValue("for", "");
+
+                var featureLabelRu = featureLabelsRu.FirstOrDefault(f => f.GetAttributeValue("for", "") == valuofForTagAz);
+                var featureNameRu = featureLabelRu.InnerHtml;
+
+                var feature = new Feature();
+                var featureLocaleAz = new FeatureLocale()
+                {
+                    Name = featureNameAz,
+                    Language = azLanguage,
+                    Feature = feature
+                };
+                var featureLocaleRu = new FeatureLocale()
+                {
+                    Name = featureNameRu,
+                    Language = ruLanguage,
+                    Feature = feature
+                };
+
+                feature.FeatureLocales = new()
+                {
+                    featureLocaleAz,
+                    featureLocaleRu
+                };
+                features.Add(feature);
+            }
+
+            cancellationToken.Cancel();
+            return features;
         }
 
         static async Task Main(string[] args)
@@ -445,132 +685,178 @@ namespace TurboazFetching
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             AppDbContext dbContext = new AppDbContext();
 
+            await SeedData.Initialize(dbContext);
+
             #region Testing Db Brand and Models
-            //var Brands = dbContext.Brands.Include((b) => b.Models).ToList();
-            //foreach (var brand in Brands)
+            //var brands = dbContext.Brands.Include((b) => b.Models).ToList();
+            //foreach (var brand in brands)
             //{
             //    Console.WriteLine("Brand Id: " + brand.Id);
             //    Console.WriteLine("Brand Name: " + brand.Name);
-            //    Console.WriteLine("\n-------- Models --------\n");
+            //    Console.WriteLine("--------" + brand.Name + "--------\n");
             //    foreach (var model in brand.Models)
             //    {
             //        Console.WriteLine("Model Id: " + model.Id);
             //        Console.WriteLine("Model Name: " + model.Name);
-            //        Console.WriteLine("Model BrandId: " + model.BrandId);
-            //        Console.WriteLine("Model BaseModelId: " + model.BaseModelId);
+            //        Console.WriteLine("Model BaseModel Id: " + model.BaseModel?.Id);
+            //        Console.WriteLine("Model BaseModel Name: " + model.BaseModel?.Name);
+            //        Console.WriteLine();
             //    }
-            //    Console.WriteLine();
             //}
             #endregion
+
 
             // GetCars();
             // GetCarsPuppeteer();
             // GetCarsSelenium();
 
-            var autoSalons = await GetAutoSalons();
-            foreach (var autoSalon in autoSalons)
-            {
-                Console.WriteLine();
-                Console.WriteLine("Cover Url: " + autoSalon.CoverUrl);
-                Console.WriteLine("Logo Url: " + autoSalon.LogoUrl);
-                Console.WriteLine("Title: " + autoSalon.Title);
-                Console.WriteLine("Slogan: " + autoSalon.Slogan);
-                Console.WriteLine("Description: " + autoSalon.Description);
-                Console.WriteLine("Location: " + autoSalon.Location);
-                Console.WriteLine("Location Link: " + autoSalon.LocationUrl);
-                Console.WriteLine("Numbers: " + autoSalon.Number);
-                Console.WriteLine();
-            }
 
-            // https://turbo.az/autos/7026350-bmw-m5
-
-            //GetSpesificCarPuppeteer("https://turbo.az/autos/7026350-bmw-m5");
-
-            #region GetBrands
-            //var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
-
-            //foreach (var brand in Brands)
+            #region GetBrandsandModels
+            //var brands = GetBrands().Result;
+            //foreach (var brand in brands)
             //{
-            //    Console.WriteLine("Brand Id " + brand.Id);
-            //    Console.WriteLine("Brand Name " + brand.Name);
-            //    Console.WriteLine();
-            //}
-            #endregion
-
-            #region GetModels of All Brands
-            //var Brands = GetOptionsFromSelect<Brand>("q[make][]").Result;
-            //var Models = GetAllModels(Brands).Result;
-
-            //foreach (var model in Models)
-            //{
-            //    Console.WriteLine("Model Id " + model.Id);
-            //    Console.WriteLine("Model Name " + model.Name);
-            //    Console.WriteLine("Model BrandId " + model.BrandId);
-            //    Console.WriteLine("Model BaseModelId " + model.BaseModelId);
+            //    Console.WriteLine("------------- " + brand.Name + " -------------");
+            //    foreach (var model in brand.Models)
+            //    {
+            //        Console.WriteLine("Model Id: " + model.Id);
+            //        Console.WriteLine("Model Name: " + model.Name);
+            //        Console.WriteLine("Model BaseModel Id: " + model.BaseModel?.Id);
+            //        Console.WriteLine("Model BaseModel Name: " + model.BaseModel?.Name);
+            //        Console.WriteLine();
+            //    }
             //    Console.WriteLine();
             //}
             #endregion
 
             #region GetRegions
-            //var Regions = GetOptionsFromSelect<Entities.Region>("q[region][]").Result;
-            //foreach (var Region in Regions)
+            //var regions = GetOptionsFromSelect<Entities.Region, RegionLocale>("q[region][]").Result;
+            //foreach (var region in regions)
             //{
-            //    Console.WriteLine("Id: " + Region.Id);
-            //    Console.WriteLine("Region Name: " + Region.Name);
+            //    Console.WriteLine("Id: " + region.Id);
+            //    foreach (var regionLocale in region.RegionLocales)
+            //    {
+            //        Console.WriteLine("Language: " + regionLocale.Language.LanguageName);
+            //        Console.WriteLine("Region Name: " + regionLocale.Name);
+            //        Console.WriteLine();
+            //    }
+
             //}
             #endregion
 
             #region GetYears
-            //var Years = GetYears().Result;
-            //foreach (var Year in Years)
+            //var years = GetYears().Result;
+            //foreach (var year in years)
             //{
-            //    Console.WriteLine("Id: " + Year.Id);
-            //    Console.WriteLine("Year: " + Year.Value);
+            //    Console.WriteLine("Id: " + year.Id);
+            //    Console.WriteLine("Year: " + year.Value);
             //}
             #endregion
 
             #region GetCategories
-            //var Categories = GetOptionsFromSelect<Category>("q[category][]").Result;
-            //foreach (var Category in Categories)
+            //var categories = GetOptionsFromSelect<Category, CategoryLocale>("q[category][]").Result;
+            //foreach (var category in categories)
             //{
-            //    Console.WriteLine("Id: " + Category.Id);
-            //    Console.WriteLine("Category Name: " + Category.Name);
+            //    Console.WriteLine("Id: " + category.Id);
+            //    foreach (var categoryLocale in category.CategoryLocales)
+            //    {
+            //        Console.WriteLine("Language: " + categoryLocale.Language.LanguageName);
+            //        Console.WriteLine("Category Name: " + categoryLocale.Name);
+            //        Console.WriteLine();
+            //    }
             //}
             #endregion
 
             #region GetColors
-            //var Colors = GetOptionsFromSelect<Entities.Color>("q[color][]").Result;
-            //foreach (var Color in Colors)
+            //var colors = GetOptionsFromSelect<Entities.Color, ColorLocale>("q[color][]").Result;
+            //foreach (var color in colors)
             //{
-            //    Console.WriteLine("Id: " + Color.Id);
-            //    Console.WriteLine("Color Name: " + Color.Name);
+            //    Console.WriteLine("Id: " + color.Id);
+            //    foreach (var colorLocale in color.ColorLocales)
+            //    {
+            //        Console.WriteLine("ColorLocale Id: " + colorLocale.Id);
+            //        Console.WriteLine("Language: " + colorLocale.Language.LanguageName);
+            //        Console.WriteLine("Color Name: " + colorLocale.Name);
+            //        Console.WriteLine("Color Id: " + colorLocale.Color.Id);
+            //        Console.WriteLine();
+            //    }
             //}
             #endregion
 
             #region GetFueltypes
-            //var Fueltypes = GetOptionsFromSelect<Fueltype>("q[fuel_type][]").Result;
-            //foreach (var Fueltype in Fueltypes)
+            //var fuelTypes = GetOptionsFromSelect<Fueltype, FueltypeLocale>("q[fuel_type][]").Result;
+            //foreach (var fuelType in fuelTypes)
             //{
-            //    Console.WriteLine("Id: " + Fueltype.Id);
-            //    Console.WriteLine("Transmission Name: " + Fueltype.Name);
+            //    Console.WriteLine("Id: " + fuelType.Id);
+            //    foreach (var fueltypeLocale in fuelType.FueltypeLocales)
+            //    {
+            //        Console.WriteLine("Language: " + fueltypeLocale.Language.LanguageName);
+            //        Console.WriteLine("Fueltype Name: " + fueltypeLocale.Name);
+            //        Console.WriteLine();
+            //    }
             //}
             #endregion
 
             #region GetTransmissions
-            //var Transmissions = GetOptionsFromSelect<Transmission>("q[transmission][]").Result;
-            //foreach (var Transmission in Transmissions)
+            //var transmissions = GetOptionsFromSelect<Transmission, TransmissionLocale>("q[transmission][]").Result;
+            //foreach (var transmission in transmissions)
             //{
-            //    Console.WriteLine("Id: " + Transmission.Id);
-            //    Console.WriteLine("Transmission Name: " + Transmission.Name);
+            //    Console.WriteLine("Id: " + transmission.Id);
+            //    foreach (var transmissionLocale in transmission.TransmissionLocales)
+            //    {
+            //        Console.WriteLine("Language: " + transmissionLocale.Language.LanguageName);
+            //        Console.WriteLine("Fueltype Name: " + transmissionLocale.Name);
+            //        Console.WriteLine();
+            //    }
             //}
             #endregion
 
             #region GetCurrencies
-            //var Currencies = GetOptionsFromSelect<Currency>("q[currency]").Result;
-            //foreach (var Currency in Currencies)
+            //var currencies = GetCurrencies().Result;
+            //foreach (var currency in currencies)
             //{
-            //    Console.WriteLine("Id: " + Currency.Id);
-            //    Console.WriteLine("Currency Name: " + Currency.Name);
+            //    Console.WriteLine("Id: " + currency.Id);
+            //    Console.WriteLine("Currency Name: " + currency.Name);
+            //}
+            #endregion
+
+            #region GetAutoSalons
+            //var autoSalons = await GetAutoSalons();
+            //foreach (var autoSalon in autoSalons)
+            //{
+            //    Console.WriteLine();
+            //    //Console.WriteLine("AutoSalonId: " + autoSalon.Id);
+            //    Console.WriteLine("Cover Url: " + autoSalon.CoverUrl);
+            //    //Console.WriteLine("Logo Url: " + autoSalon.LogoUrl);
+            //    //Console.WriteLine("Title: " + autoSalon.Title);
+            //    //foreach (var autoSalonLocale in autoSalon.AutoSalonLocales)
+            //    //{
+            //    //    Console.WriteLine("SalonLocaleId: " + autoSalonLocale.Id);
+            //    //    Console.WriteLine("Language: " + autoSalonLocale.Language.DisplayName);
+            //    //    Console.WriteLine("AutoSalonId: " + autoSalonLocale.AutoSalon.Id);
+            //    //    Console.WriteLine("Slogan: " + autoSalonLocale.Slogan);
+            //    //    Console.WriteLine("Description: " + autoSalonLocale.Description);
+            //    //    Console.WriteLine("Location: " + autoSalonLocale.Location);
+
+            //    //}
+            //    //Console.WriteLine("Location Link: " + autoSalon.LocationUrl);
+            //    //Console.WriteLine("Numbers: " + autoSalon.Number);
+            //    Console.WriteLine();
+            //}
+            #endregion
+
+            #region GetFetures
+            //var features = GetFetures();
+
+            //foreach (var feature in features)
+            //{
+            //    Console.WriteLine("Feature Id: " + feature.Id);
+            //    foreach (var fetureLocale in feature.FeatureLocales)
+            //    {
+            //        Console.WriteLine("Language: " + fetureLocale.Language.DisplayName);
+            //        Console.WriteLine("Feature Name: " + fetureLocale.Name);
+            //        Console.WriteLine("Feature Id: " + fetureLocale.Feature.Id);
+            //    }
+            //    Console.WriteLine();
             //}
             #endregion
 

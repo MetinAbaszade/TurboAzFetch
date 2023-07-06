@@ -25,9 +25,9 @@ namespace TurboazFetching.Entities
         public bool CreditAvailable { get; set; }
         public bool BarterAvailable { get; set; }
         public string Comment { get; set; }
-        public int? AutoSalonId { get; set; }
         public AutoSalon AutoSalon { get; set; }
         public List<Image> Images { get; set; }
+        public List<Feature> Features { get; set; }
 
         public Car() { }
 

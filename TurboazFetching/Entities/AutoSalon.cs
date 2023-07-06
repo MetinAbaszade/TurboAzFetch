@@ -10,13 +10,11 @@ namespace TurboazFetching.Entities
     {
         public int Id { get; set; }
         public string Title { get; set; }
-        public string Location { get; set; }
         public string? LocationUrl { get; set; }
-        public string Slogan { get; set; }
-        public string Description { get; set; }
         public string Number { get; set; }
         public string LogoUrl { get; set; }
         public string CoverUrl { get; set; }
+        public List<AutoSalonLocale> AutoSalonLocales { get; set; }
 
         public AutoSalon() { }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,9 +15,8 @@ namespace TurboazFetching.Entities
 
         public Brand() {}
 
-        public Brand(int id, string name)
-        {
-            Id = id;
+        public Brand(string name)
+        { 
             Name = name;
         }
     }
