@@ -29,30 +29,38 @@ namespace TurboazFetching.Data
                 LanguageName = "Russian",
                 DisplayName = "Ru"
             };
-            dbContext.Languages.Add(azLanguage);
-            dbContext.Languages.Add(ruLanguage);
+
+            List<Language> languages = new()
+            {
+                azLanguage,
+                ruLanguage
+            };
+
+
+            dbContext.Languages.AddRange(languages);
 
             var brands = Program.GetBrands().Result;
             var years = Program.GetYears().Result;
-            var colors = Program.GetOptionsFromSelect<Entities.Color, ColorLocale>("q[color][]").Result;
-            var regions = Program.GetOptionsFromSelect<Entities.Region, RegionLocale>("q[region][]").Result;
-            var features = Program.GetFetures();
-            var fueltypes = Program.GetOptionsFromSelect<Fueltype, FueltypeLocale>("q[fuel_type][]").Result;
-            var autoSalons = Program.GetAutoSalons().Result;
+            var colors = Program.GetOptionsFromSelect<Entities.Color, ColorLocale>("q[color][]", languages).Result;
+            var regions = Program.GetOptionsFromSelect<Entities.Region, RegionLocale>("q[region][]", languages).Result;
+            var features = Program.GetFetures(languages);
+            var fueltypes = Program.GetOptionsFromSelect<Fueltype, FueltypeLocale>("q[fuel_type][]", languages).Result;
+            var autoSalons = Program.GetAutoSalons(languages).Result;
             var currencies = Program.GetCurrencies().Result;
             //var categories = Program.GetOptionsFromSelect<Category, CategoryLocale>("q[category][]").Result;
-            var transmissions = Program.GetOptionsFromSelect<Transmission, TransmissionLocale>("q[transmission][]").Result;
+            var transmissions = Program.GetOptionsFromSelect<Transmission, TransmissionLocale>("q[transmission][]", languages).Result;
 
 
 
             dbContext.Years.AddRange(years);
-            // dbContext.Brands.AddRange(brands);
+            dbContext.Brands.AddRange(brands);
             dbContext.Colors.AddRange(colors);
             dbContext.Regions.AddRange(regions);
             dbContext.Features.AddRange(features);
             dbContext.Fueltypes.AddRange(fueltypes);
             dbContext.Currencies.AddRange(currencies);
-            // dbContext.AutoSalons.AddRange(autoSalons);
+            dbContext.AutoSalons.AddRange(autoSalons);
+            // dbContext.Categories.AddRange(categories);
             dbContext.Transmissions.AddRange(transmissions);
 
             await dbContext.SaveChangesAsync();

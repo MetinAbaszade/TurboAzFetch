@@ -14,6 +14,7 @@ using Newtonsoft.Json.Linq;
 using System.Drawing;
 using System.Dynamic;
 using System.Reflection.Emit;
+using System.Drawing.Drawing2D;
 
 namespace TurboazFetching
 {
@@ -270,21 +271,13 @@ namespace TurboazFetching
         }
 
         // Downlods options inside select(Category, Color, Transmission, Fueltype...) and return list of these elements
-        public static async Task<List<DataType>> GetOptionsFromSelect<DataType, LocaleType>(string selectname) where DataType : new() where LocaleType : new()
+        public static async Task<List<DataType>> GetOptionsFromSelect<DataType, LocaleType>(string selectname, List<Language> languages) where DataType : new() where LocaleType : new()
         {
             CancellationTokenSource cancellationToken = new();
             SeedData.StartAnimation(cancellationToken.Token, $"Seeding {selectname}...");
 
-            Language azLanguage = new Language()
-            {
-                LanguageName = "Azerbaijany",
-                DisplayName = "Az"
-            };
-            Language ruLanguage = new Language()
-            {
-                LanguageName = "Russian",
-                DisplayName = "Ru"
-            };
+            Language azLanguage = languages.FirstOrDefault(l => l.DisplayName == "Az");
+            Language ruLanguage = languages.FirstOrDefault(l => l.DisplayName == "Ru");
 
             // Downloading options in AZ language:
             var azUrl = $"https://turbo.az";
@@ -506,18 +499,10 @@ namespace TurboazFetching
             return backgroundUrl;
         }
 
-        public static AutoSalon GetAutoSalonDetails(string url)
+        public static AutoSalon GetAutoSalonDetails(string url, List<Language> languages)
         {
-            Language azLanguage = new Language()
-            {
-                LanguageName = "Azerbaijany",
-                DisplayName = "Az"
-            };
-            Language ruLanguage = new Language()
-            {
-                LanguageName = "Russian",
-                DisplayName = "Ru"
-            };
+            Language azLanguage = languages.FirstOrDefault(l => l.DisplayName == "Az");
+            Language ruLanguage = languages.FirstOrDefault(l => l.DisplayName == "Ru");
 
             var fullUrlAZ = "https://turbo.az/" + url;
             var docAZ = DownloadPage(fullUrlAZ).Result;
@@ -594,7 +579,7 @@ namespace TurboazFetching
             return autoSalon;
         }
 
-        public static async Task<List<AutoSalon>> GetAutoSalons()
+        public static async Task<List<AutoSalon>> GetAutoSalons(List<Language> languages)
         {
             CancellationTokenSource cancellationToken = new();
             SeedData.StartAnimation(cancellationToken.Token, "Seeding AutoSalons...");
@@ -610,7 +595,7 @@ namespace TurboazFetching
             foreach (var autosalonlink in autoSalonLinks)
             {
                 var link = autosalonlink.GetAttributeValue("href", "");
-                var autoSalon = GetAutoSalonDetails(link);
+                var autoSalon = GetAutoSalonDetails(link, languages);
                 autoSalons.Add(autoSalon);
             }
 
@@ -618,21 +603,13 @@ namespace TurboazFetching
             return autoSalons;
         }
 
-        public static List<Feature> GetFetures()
+        public static List<Feature> GetFetures(List<Language> languages)
         {
             CancellationTokenSource cancellationToken = new();
             SeedData.StartAnimation(cancellationToken.Token, "Seeding Features...");
 
-            Language azLanguage = new Language()
-            {
-                LanguageName = "Azerbaijany",
-                DisplayName = "Az"
-            };
-            Language ruLanguage = new Language()
-            {
-                LanguageName = "Russian",
-                DisplayName = "Ru"
-            };
+            Language azLanguage = languages.FirstOrDefault(l => l.DisplayName == "Az");
+            Language ruLanguage = languages.FirstOrDefault(l => l.DisplayName == "Ru");
 
             var azUrl = "https://turbo.az/";
             var azDoc = DownloadPage(azUrl).Result;
@@ -685,23 +662,152 @@ namespace TurboazFetching
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             AppDbContext dbContext = new AppDbContext();
 
-            await SeedData.Initialize(dbContext);
+            //await SeedData.Initialize(dbContext);
 
             #region Testing Db Brand and Models
-            //var brands = dbContext.Brands.Include((b) => b.Models).ToList();
-            //foreach (var brand in brands)
+            var brands = dbContext.Brands.Include((b) => b.Models).ToList();
+            Console.WriteLine("\n---------------- BRANDS ----------------\n");
+            foreach (var brand in brands)
+            {
+                Console.WriteLine("Brand Id: " + brand.Id);
+                Console.WriteLine("Brand Name: " + brand.Name);
+                Console.WriteLine("--------" + brand.Name + "--------\n");
+                foreach (var model in brand.Models)
+                {
+                    Console.WriteLine("Model Id: " + model.Id);
+                    Console.WriteLine("Model Name: " + model.Name);
+                    Console.WriteLine("Model BaseModel Id: " + model.BaseModel?.Id);
+                    Console.WriteLine("Model BaseModel Name: " + model.BaseModel?.Name);
+                    Console.WriteLine();
+                }
+                Console.WriteLine();
+            }
+
+            //var regions = dbContext.Regions.Include((r) => r.RegionLocales)
+            //                               .ThenInclude(rl => rl.Language).ToList();
+            //Console.WriteLine("\n---------------- REGIONS ----------------\n");
+            //foreach (var region in regions)
             //{
-            //    Console.WriteLine("Brand Id: " + brand.Id);
-            //    Console.WriteLine("Brand Name: " + brand.Name);
-            //    Console.WriteLine("--------" + brand.Name + "--------\n");
-            //    foreach (var model in brand.Models)
+            //    Console.WriteLine("Id: " + region.Id);
+            //    foreach (var regionLocale in region.RegionLocales)
             //    {
-            //        Console.WriteLine("Model Id: " + model.Id);
-            //        Console.WriteLine("Model Name: " + model.Name);
-            //        Console.WriteLine("Model BaseModel Id: " + model.BaseModel?.Id);
-            //        Console.WriteLine("Model BaseModel Name: " + model.BaseModel?.Name);
+            //        Console.WriteLine("Language: " + regionLocale.Language.LanguageName);
+            //        Console.WriteLine("Region Name: " + regionLocale.Name);
             //        Console.WriteLine();
             //    }
+            //}
+
+            //var years = dbContext.Years.ToList();
+            //Console.WriteLine("\n---------------- YEARS ----------------\n");
+            //foreach (var year in years)
+            //{
+            //    Console.WriteLine("Id: " + year.Id);
+            //    Console.WriteLine("Year: " + year.Value);
+            //}
+
+            //var categories = dbContext.Categories.Include(c => c.CategoryLocales)
+            //                                     .ThenInclude(cl => cl.Language).ToList();
+            //Console.WriteLine("\n---------------- CATEGORIES ----------------\n");
+            //foreach (var category in categories)
+            //{
+            //    Console.WriteLine("Id: " + category.Id);
+            //    foreach (var categoryLocale in category.CategoryLocales)
+            //    {
+            //        Console.WriteLine("Language: " + categoryLocale.Language.LanguageName);
+            //        Console.WriteLine("Category Name: " + categoryLocale.Name);
+            //        Console.WriteLine();
+            //    }
+            //}
+
+            //var colors = dbContext.Colors.Include(c => c.ColorLocales)
+            //                             .ThenInclude(cl => cl.Language).ToList();
+            //Console.WriteLine("\n---------------- COLORS ----------------\n");
+            //foreach (var color in colors)
+            //{
+            //    Console.WriteLine("Id: " + color.Id);
+            //    foreach (var colorLocale in color.ColorLocales)
+            //    {
+            //        Console.WriteLine("ColorLocale Id: " + colorLocale.Id);
+            //        Console.WriteLine("Language: " + colorLocale.Language.LanguageName);
+            //        Console.WriteLine("Color Name: " + colorLocale.Name);
+            //        Console.WriteLine("Color Id: " + colorLocale.Color.Id);
+            //        Console.WriteLine();
+            //    }
+            //}
+
+            //var fuelTypes = dbContext.Fueltypes.Include(ft => ft.FueltypeLocales)
+            //                                   .ThenInclude(ftl => ftl.Language).ToList();
+            //Console.WriteLine("\n---------------- FUELTYPES ----------------\n");
+            //foreach (var fuelType in fuelTypes)
+            //{
+            //    Console.WriteLine("Id: " + fuelType.Id);
+            //    foreach (var fueltypeLocale in fuelType.FueltypeLocales)
+            //    {
+            //        Console.WriteLine("Language: " + fueltypeLocale.Language.LanguageName);
+            //        Console.WriteLine("Fueltype Name: " + fueltypeLocale.Name);
+            //        Console.WriteLine();
+            //    }
+            //}
+
+            //var transmissions = dbContext.Transmissions.Include(t => t.TransmissionLocales)
+            //                                           .ThenInclude(tl => tl.Language).ToList();
+            //Console.WriteLine("\n---------------- TRANSMISSIONS ----------------\n");
+            //foreach (var transmission in transmissions)
+            //{
+            //    Console.WriteLine("Id: " + transmission.Id);
+            //    foreach (var transmissionLocale in transmission.TransmissionLocales)
+            //    {
+            //        Console.WriteLine("Language: " + transmissionLocale.Language.LanguageName);
+            //        Console.WriteLine("Fueltype Name: " + transmissionLocale.Name);
+            //        Console.WriteLine();
+            //    }
+            //}
+
+            //var currencies = dbContext.Currencies.ToList();
+            //Console.WriteLine("\n---------------- CURRENCIES ----------------\n");
+            //foreach (var currency in currencies)
+            //{
+            //    Console.WriteLine("Id: " + currency.Id);
+            //    Console.WriteLine("Currency Name: " + currency.Name);
+            //}
+
+            //var autoSalons = dbContext.AutoSalons.Include(s => s.AutoSalonLocales)
+            //                                     .ThenInclude(sl => sl.Language).ToList();
+            //Console.WriteLine("\n---------------- AUTOSALONS ----------------\n");
+            //foreach (var autoSalon in autoSalons)
+            //{
+            //    Console.WriteLine("AutoSalonId: " + autoSalon.Id);
+            //    Console.WriteLine("Cover Url: " + autoSalon.CoverUrl);
+            //    Console.WriteLine("Logo Url: " + autoSalon.LogoUrl);
+            //    Console.WriteLine("Title: " + autoSalon.Title);
+            //    foreach (var autoSalonLocale in autoSalon.AutoSalonLocales)
+            //    {
+            //        Console.WriteLine("SalonLocaleId: " + autoSalonLocale.Id);
+            //        Console.WriteLine("Language: " + autoSalonLocale.Language.DisplayName);
+            //        Console.WriteLine("AutoSalonId: " + autoSalonLocale.AutoSalon.Id);
+            //        Console.WriteLine("Slogan: " + autoSalonLocale.Slogan);
+            //        Console.WriteLine("Description: " + autoSalonLocale.Description);
+            //        Console.WriteLine("Location: " + autoSalonLocale.Location);
+
+            //    }
+            //    Console.WriteLine("Location Link: " + autoSalon.LocationUrl);
+            //    Console.WriteLine("Numbers: " + autoSalon.Number);
+            //    Console.WriteLine();
+            //}
+
+            //var features = dbContext.Features.Include(f => f.FeatureLocales)
+            //                                 .ThenInclude(fl => fl.Language).ToList();
+            //Console.WriteLine("\n---------------- FEATURES ----------------\n");
+            //foreach (var feature in features)
+            //{
+            //    Console.WriteLine("Feature Id: " + feature.Id);
+            //    foreach (var fetureLocale in feature.FeatureLocales)
+            //    {
+            //        Console.WriteLine("Language: " + fetureLocale.Language.DisplayName);
+            //        Console.WriteLine("Feature Name: " + fetureLocale.Name);
+            //        Console.WriteLine("Feature Id: " + fetureLocale.Feature.Id);
+            //    }
+            //    Console.WriteLine();
             //}
             #endregion
 
