@@ -661,30 +661,36 @@ namespace TurboazFetching
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
             AppDbContext dbContext = new AppDbContext();
+            //var model = new Model()
+            //{
+            //    Name = "bmw nin yeri modeli",
+            //    Brand = new() { Id = 1 }
+            //};
 
-            //await SeedData.Initialize(dbContext);
+            await SeedData.Initialize(dbContext);
 
             #region Testing Db Brand and Models
-            var brands = dbContext.Brands.Include((b) => b.Models).ToList();
-            Console.WriteLine("\n---------------- BRANDS ----------------\n");
-            foreach (var brand in brands)
-            {
-                Console.WriteLine("Brand Id: " + brand.Id);
-                Console.WriteLine("Brand Name: " + brand.Name);
-                Console.WriteLine("--------" + brand.Name + "--------\n");
-                foreach (var model in brand.Models)
-                {
-                    Console.WriteLine("Model Id: " + model.Id);
-                    Console.WriteLine("Model Name: " + model.Name);
-                    Console.WriteLine("Model BaseModel Id: " + model.BaseModel?.Id);
-                    Console.WriteLine("Model BaseModel Name: " + model.BaseModel?.Name);
-                    Console.WriteLine();
-                }
-                Console.WriteLine();
-            }
+            //var brands = dbContext.Brands.Include((b) => b.Models).ToList();
+            //Console.WriteLine("\n---------------- BRANDS ----------------\n");
+            //foreach (var brand in brands)
+            //{
+            //    Console.WriteLine("Brand Id: " + brand.Id);
+            //    Console.WriteLine("Brand Name: " + brand.Name);
+            //    Console.WriteLine("--------" + brand.Name + "--------\n");
+            //    foreach (var model in brand.Models)
+            //    {
+            //        Console.WriteLine("Model Id: " + model.Id);
+            //        Console.WriteLine("Model Name: " + model.Name);
+            //        Console.WriteLine("Model BaseModel Id: " + model.BaseModel?.Id);
+            //        Console.WriteLine("Model BaseModel Name: " + model.BaseModel?.Name);
+            //        Console.WriteLine();
+            //    }
+            //    Console.WriteLine();
+            //}
 
-            //var regions = dbContext.Regions.Include((r) => r.RegionLocales)
-            //                               .ThenInclude(rl => rl.Language).ToList();
+            //var regions = dbContext.Regions.Include("RegionLocales")
+            //                               .Include("RegionLocales.Language").ToList();
+
             //Console.WriteLine("\n---------------- REGIONS ----------------\n");
             //foreach (var region in regions)
             //{
