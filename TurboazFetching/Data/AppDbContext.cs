@@ -40,7 +40,7 @@ namespace TurboazFetching.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlServer("Data Source=METIN-ABASZADE;Initial Catalog=CarUniverse;Integrated Security=True;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
+            optionsBuilder.UseSqlServer("Data Source=DESKTOP-G1Q07RP;Initial Catalog=CarUniverse;Integrated Security=True;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
             optionsBuilder.EnableSensitiveDataLogging();
         }
 

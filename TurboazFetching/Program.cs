@@ -15,6 +15,7 @@ using System.Drawing;
 using System.Dynamic;
 using System.Reflection.Emit;
 using System.Drawing.Drawing2D;
+using Microsoft.Data.SqlClient.DataClassification;
 
 namespace TurboazFetching
 {
@@ -32,11 +33,85 @@ namespace TurboazFetching
             return doc;
         }
 
-        public static async void GetCars()
+        public static async Task<Dictionary<string, string>> GetCarDetails(string carLink)
+        {
+            string fullLink = "https://turbo.az/" + carLink;
+            var doc = DownloadPage(fullLink).Result;
+
+            var carDetailNodes = doc.DocumentNode.Descendants("div")
+                              .Where(node => node.GetAttributeValue("class", "") == "product-properties__i");
+
+            Dictionary<string, string> carDetails = new();
+            foreach (var carDetailNode in carDetailNodes)
+            {
+                var labelNode = carDetailNode.Descendants("label").FirstOrDefault();
+                var spanNode = carDetailNode.Descendants("span").FirstOrDefault();
+
+                string property = labelNode.InnerText.Trim();
+                string value = String.Empty;
+
+                if (labelNode != null && spanNode != null)
+                {
+                    var aNode = spanNode.Descendants("a").FirstOrDefault();
+                    var innerSpanNode = spanNode.Descendants("span").FirstOrDefault();
+                    if (aNode != null)
+                    {
+                        // If the span contains an 'a' tag, get its inner HTML.
+                        value = aNode.InnerHtml.Trim();
+                    }
+                    else if (innerSpanNode != null)
+                    {
+                        // If the span contains a 'span' tag, get its inner HTML.
+                        value = innerSpanNode.InnerHtml.Trim();
+                    }
+                    else
+                    {
+                        // Otherwise, get the span's inner text.
+                        value = spanNode.InnerHtml.Trim();
+                    }
+                }
+
+                carDetails.Add(property, value);
+                // Console.WriteLine(property + ": " + value);
+            }
+
+            var carDescription = doc.DocumentNode.Descendants("div")
+                             .FirstOrDefault(node => node.GetAttributeValue("class", "")
+                             .Contains("product-description__content"))?
+                             .Descendants("p").FirstOrDefault()?.InnerHtml;
+
+            carDetails.Add("Description", carDescription);
+
+            var carFeatures = doc.DocumentNode.Descendants("li")
+                             .Where(node => node.GetAttributeValue("class", "") == "product-extras__i");
+
+            // Create a list to hold car features
+            List<string> featuresList = new List<string>();
+
+            foreach (var carFeature in carFeatures)
+            {
+                // Add each feature to the list
+                featuresList.Add(carFeature.InnerHtml.Trim());
+            }
+
+            // Add the feature list to the car details, joining the features with a delimiter
+            carDetails.Add("Features", string.Join("|", featuresList));
+
+            return carDetails;
+        }
+
+
+        public static async Task<List<Car>> GetCars(List<Brand> brands,
+                                         List<Feature> features,
+                                         List<Category> categories,
+                                         List<Entities.Color> colors,
+                                         List<Entities.Region> regions,
+                                         List<Transmission> transmissions)
         {
             Console.WriteLine("How many pages do you want to fetch: ");
             int pagecountcount = int.Parse(Console.ReadLine());
             int carcount = 1;
+            List<Car> cars = new();
 
             for (int i = 0; i < pagecountcount; i++)
             {
@@ -44,22 +119,102 @@ namespace TurboazFetching
 
                 var doc = DownloadPage(url).Result;
 
-                var productNodes = doc.DocumentNode.Descendants("div")
-                                  .Where(node => node.GetAttributeValue("class", "") == "products-i");
+                var productNodes = doc.DocumentNode.Descendants("a")
+                                  .Where(node => node.GetAttributeValue("class", "") == "products-i__link");
 
                 foreach (var element in productNodes)
                 {
-                    var Name = element.Descendants("div").FirstOrDefault(e => e.GetAttributeValue("class", "").Contains("products-i__name")).InnerHtml;
-                    string Atributes = element.Descendants("div").FirstOrDefault(e => e.GetAttributeValue("class", "").Contains("products-i__attributes")).InnerHtml;
-                    string Datetime = element.Descendants("div").FirstOrDefault(e => e.GetAttributeValue("class", "").Contains("products-i__datetime")).InnerHtml;
+                    var carLink = element.GetAttributeValue("href", "");
 
-                    Console.WriteLine($"Car {carcount++}");
-                    Console.WriteLine("Name: " + Name);
-                    Console.WriteLine("Atributes: " + Atributes);
-                    Console.WriteLine("Datetime: " + Datetime);
                     Console.WriteLine();
+                    var carDetails = await GetCarDetails(carLink);
+                    var car = new Car();
+
+                    var brand = brands.FirstOrDefault(b => b.Name == carDetails["Marka"]);
+                    var brandId = brand?.Id;
+                    var modelId = brand?.Models.FirstOrDefault(m => m.Name == carDetails["Model"])?.Id;
+                    var colorId = colors.FirstOrDefault(c => c.ColorLocales.FirstOrDefault()?.Name == carDetails["Rəng"])?.Id;
+                    var regionId = regions.FirstOrDefault(r => r.RegionLocales.FirstOrDefault()?.Name == carDetails["Şəhər"])?.Id;
+                    var releaseYear = carDetails["Buraxılış ili"];
+                    var description = carDetails["Description"];
+                    string featuresString = carDetails["Features"];
+
+                    // Split the features string into a list of features
+                    List<string> featuresList = featuresString.Split('|').ToList();
+
+                    // Now you can work with the featuresList
+                    foreach (string feature in featuresList)
+                    {
+                        var dbFeature = features.FirstOrDefault(f => f.FeatureLocales.FirstOrDefault()?.Name == feature);
+                        if (dbFeature != null)
+                        {
+                            car.Features.Add(dbFeature);
+                        }
+                    }
+
+                    if (regionId.HasValue && regionId.Value != 0 &&
+                       brandId.HasValue && brandId.Value != 0 &&
+                       modelId.HasValue && modelId.Value != 0 &&
+                       !string.IsNullOrEmpty(releaseYear) &&
+                       colorId.HasValue && colorId.Value != 0)
+                    {
+                        car.RegionId = regionId.Value;
+                        car.BrandId = brandId.Value;
+                        car.ModelId = modelId.Value;
+                        car.ReleaseYear = releaseYear;
+                        car.ColorId = colorId.Value;
+                        car.Description = description;
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    //foreach (var carDetail in carDetails)
+                    //{
+                    //    switch (carDetail.Key)
+                    //    {
+                    //        case ("Şəhər"):
+                    //            car.RegionId = regions.FirstOrDefault(r => r.RegionLocales.FirstOrDefault().Name == carDetail.Value).Id;
+                    //            break;
+                    //        case ("Marka"):
+                    //            car.BrandId = brands.FirstOrDefault(b => b.Name == carDetail.Value).Id;
+                    //            break;
+                    //        case ("Model"):
+                    //            var brand = brands.FirstOrDefault(b => b.Name == carDetails["Marka"]);
+                    //            car.ModelId = brand.Models.FirstOrDefault(m => m.Name == carDetail.Value).Id;
+                    //            break;
+                    //        case ("Buraxılış ili"):
+                    //            car.ReleaseYear = carDetail.Value;
+                    //            break;
+                    //        case ("Ban növü"):
+                    //            //car.CategoryId = categories.FirstOrDefault(c => c.CategoryLocales.FirstOrDefault().Name == carDetail.Value).Id;
+                    //            break;
+                    //        case ("Rəng"):
+                    //            car.ColorId = colors.FirstOrDefault(c => c.ColorLocales.FirstOrDefault().Name == carDetail.Value).Id;
+                    //            break;
+                    //        case ("Mühərrik"):
+                    //            break;
+                    //        case ("Yürüş"):
+                    //            break;
+                    //        case ("Surətlər qutusu"):
+                    //            break;
+                    //        case ("Ötürücü"):
+                    //            break;
+                    //        case ("Yeni"):
+                    //            break;
+                    //        case ("Yerlərin sayı"):
+                    //            break;
+
+                    //        default:
+                    //            break;
+                    //    }
+                    //}
+                    cars.Add(car);
                 }
             }
+
+            return cars;
         }
 
         public static async void GetCarsSelenium()
@@ -398,7 +553,7 @@ namespace TurboazFetching
             return currencies;
         }
 
-        public static async Task<List<Brand>> GetBrands()   
+        public static async Task<List<Brand>> GetBrands()
         {
             CancellationTokenSource cancellationToken = new();
             SeedData.StartAnimation(cancellationToken.Token, "Seeding Brands...");
@@ -667,8 +822,36 @@ namespace TurboazFetching
             //    Brand = new() { Id = 1 }
             //};
 
-            await SeedData.Initialize(dbContext);
+            // await SeedData.Initialize(dbContext);
 
+            var years = dbContext.Years.ToList();
+            var colors = dbContext.Colors.Include(c => c.ColorLocales).ToList();
+            var brands = dbContext.Brands.Include((b) => b.Models).ToList();
+            var regions = dbContext.Regions.Include("RegionLocales").ToList();
+            var fuelTypes = dbContext.Fueltypes.Include(ft => ft.FueltypeLocales).ToList();
+            var categories = dbContext.Categories.Include(c => c.CategoryLocales).ToList();
+            var features = dbContext.Features.Include(f => f.FeatureLocales).ToList();
+            var transmissions = dbContext.Transmissions.Include(t => t.TransmissionLocales).ToList();
+            var cars = await GetCars(brands, features, categories, colors, regions, transmissions);
+
+
+            foreach (var car in cars)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Brand: " + car.BrandId);
+                Console.WriteLine("Model: " + car.ModelId);
+                Console.WriteLine("Region: " + car.RegionId);
+                Console.WriteLine("ReleaseYear: " + car.ReleaseYear);
+                Console.WriteLine("Category: " + car.CategoryId);
+                Console.WriteLine("Color: " + car.ColorId);
+                Console.WriteLine("Description: " + car.Description);
+                Console.WriteLine("Features: ");
+                foreach (var feature in car.Features)
+                {
+                    Console.WriteLine(feature.FeatureLocales[0].Name + " - " + feature.FeatureLocales[1].Name);
+                }
+                Console.WriteLine();
+            }
             #region Testing Db Brand and Models
             //var brands = dbContext.Brands.Include((b) => b.Models).ToList();
             //Console.WriteLine("\n---------------- BRANDS ----------------\n");
@@ -816,6 +999,8 @@ namespace TurboazFetching
             //    Console.WriteLine();
             //}
             #endregion
+
+
 
 
             // GetCars();
