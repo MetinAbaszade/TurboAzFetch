@@ -6,14 +6,17 @@ using System.Threading.Tasks;
 
 namespace TurboazFetching.Entities
 {
-    public class FuelTypeLocale
+    public class GearTypeLocale
     {
         public int Id { get; set; }
         public string Name { get; set; }
 
         public Language Language { get; set; }
-        public FuelType Fueltype { get; set; }
+        public GearType GearType { get; set; }
 
-        public FuelTypeLocale() { }
+        public GearTypeLocale()
+        {
+            
+        }
     }
 }

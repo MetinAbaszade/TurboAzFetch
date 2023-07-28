@@ -12,7 +12,7 @@ using TurboazFetching.Data;
 namespace TurboazFetching.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230714120458_init")]
+    [Migration("20230728135922_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -132,7 +132,7 @@ namespace TurboazFetching.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AutoSalonId")
+                    b.Property<int?>("AutoSalonId")
                         .HasColumnType("int");
 
                     b.Property<bool>("BarterAvailable")
@@ -147,20 +147,22 @@ namespace TurboazFetching.Migrations
                     b.Property<int>("ColorId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("CreditAvailable")
                         .HasColumnType("bit");
 
                     b.Property<int>("CurrencyId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("EngineVolume")
                         .HasColumnType("int");
 
                     b.Property<int>("FueltypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GearTypeId")
                         .HasColumnType("int");
 
                     b.Property<int>("HorsePower")
@@ -169,22 +171,34 @@ namespace TurboazFetching.Migrations
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("MarketId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Mileage")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MileageTypeId")
                         .HasColumnType("int");
 
                     b.Property<int>("ModelId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("OwnerId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Price")
                         .HasColumnType("int");
 
-                    b.Property<int>("RegionId")
+                    b.Property<int?>("RegionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReleaseYearId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SeatCount")
                         .HasColumnType("int");
 
                     b.Property<int>("TransmissionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("YearId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -201,13 +215,21 @@ namespace TurboazFetching.Migrations
 
                     b.HasIndex("FueltypeId");
 
+                    b.HasIndex("GearTypeId");
+
+                    b.HasIndex("MarketId");
+
+                    b.HasIndex("MileageTypeId");
+
                     b.HasIndex("ModelId");
+
+                    b.HasIndex("OwnerId");
 
                     b.HasIndex("RegionId");
 
-                    b.HasIndex("TransmissionId");
+                    b.HasIndex("ReleaseYearId");
 
-                    b.HasIndex("YearId");
+                    b.HasIndex("TransmissionId");
 
                     b.ToTable("Cars");
                 });
@@ -220,12 +242,7 @@ namespace TurboazFetching.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ImageId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("ImageId");
 
                     b.ToTable("Categories");
                 });
@@ -354,7 +371,7 @@ namespace TurboazFetching.Migrations
                     b.ToTable("FeatureLocales");
                 });
 
-            modelBuilder.Entity("TurboazFetching.Entities.Fueltype", b =>
+            modelBuilder.Entity("TurboazFetching.Entities.FuelType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -367,7 +384,7 @@ namespace TurboazFetching.Migrations
                     b.ToTable("Fueltypes");
                 });
 
-            modelBuilder.Entity("TurboazFetching.Entities.FueltypeLocale", b =>
+            modelBuilder.Entity("TurboazFetching.Entities.FuelTypeLocale", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -392,6 +409,46 @@ namespace TurboazFetching.Migrations
                     b.HasIndex("LanguageId");
 
                     b.ToTable("FueltypeLocales");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.GearType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GearTypes");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.GearTypeLocale", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GearTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LanguageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GearTypeId");
+
+                    b.HasIndex("LanguageId");
+
+                    b.ToTable("GearTypeLocales");
                 });
 
             modelBuilder.Entity("TurboazFetching.Entities.Image", b =>
@@ -435,6 +492,63 @@ namespace TurboazFetching.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Languages");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.Market", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Markets");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.MarketLocale", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("LanguageId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MarketId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LanguageId");
+
+                    b.HasIndex("MarketId");
+
+                    b.ToTable("MarketLocales");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.MileageType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MileageTypes");
                 });
 
             modelBuilder.Entity("TurboazFetching.Entities.Model", b =>
@@ -544,6 +658,62 @@ namespace TurboazFetching.Migrations
                     b.ToTable("TransmissionLocales");
                 });
 
+            modelBuilder.Entity("TurboazFetching.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<byte[]>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("ProfileImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("TokenExpires")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("TurboazFetching.Entities.Year", b =>
                 {
                     b.Property<int>("Id")
@@ -598,9 +768,7 @@ namespace TurboazFetching.Migrations
                 {
                     b.HasOne("TurboazFetching.Entities.AutoSalon", "AutoSalon")
                         .WithMany("Cars")
-                        .HasForeignKey("AutoSalonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AutoSalonId");
 
                     b.HasOne("TurboazFetching.Entities.Brand", "Brand")
                         .WithMany()
@@ -626,9 +794,27 @@ namespace TurboazFetching.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TurboazFetching.Entities.Fueltype", "Fueltype")
+                    b.HasOne("TurboazFetching.Entities.FuelType", "Fueltype")
                         .WithMany()
                         .HasForeignKey("FueltypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TurboazFetching.Entities.GearType", "GearType")
+                        .WithMany()
+                        .HasForeignKey("GearTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TurboazFetching.Entities.Market", "Market")
+                        .WithMany()
+                        .HasForeignKey("MarketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TurboazFetching.Entities.MileageType", "MileageType")
+                        .WithMany()
+                        .HasForeignKey("MileageTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -638,21 +824,23 @@ namespace TurboazFetching.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
+                    b.HasOne("TurboazFetching.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId");
+
                     b.HasOne("TurboazFetching.Entities.Region", "Region")
                         .WithMany()
-                        .HasForeignKey("RegionId")
+                        .HasForeignKey("RegionId");
+
+                    b.HasOne("TurboazFetching.Entities.Year", "Year")
+                        .WithMany()
+                        .HasForeignKey("ReleaseYearId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TurboazFetching.Entities.Transmission", "Transmission")
                         .WithMany()
                         .HasForeignKey("TransmissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TurboazFetching.Entities.Year", "Year")
-                        .WithMany()
-                        .HasForeignKey("YearId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -668,24 +856,21 @@ namespace TurboazFetching.Migrations
 
                     b.Navigation("Fueltype");
 
+                    b.Navigation("GearType");
+
+                    b.Navigation("Market");
+
+                    b.Navigation("MileageType");
+
                     b.Navigation("Model");
+
+                    b.Navigation("Owner");
 
                     b.Navigation("Region");
 
                     b.Navigation("Transmission");
 
                     b.Navigation("Year");
-                });
-
-            modelBuilder.Entity("TurboazFetching.Entities.Category", b =>
-                {
-                    b.HasOne("TurboazFetching.Entities.Image", "Image")
-                        .WithMany()
-                        .HasForeignKey("ImageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Image");
                 });
 
             modelBuilder.Entity("TurboazFetching.Entities.CategoryLocale", b =>
@@ -745,21 +930,40 @@ namespace TurboazFetching.Migrations
                     b.Navigation("Language");
                 });
 
-            modelBuilder.Entity("TurboazFetching.Entities.FueltypeLocale", b =>
+            modelBuilder.Entity("TurboazFetching.Entities.FuelTypeLocale", b =>
                 {
-                    b.HasOne("TurboazFetching.Entities.Fueltype", "Fueltype")
-                        .WithMany("FueltypeLocales")
+                    b.HasOne("TurboazFetching.Entities.FuelType", "Fueltype")
+                        .WithMany("FuelTypeLocales")
                         .HasForeignKey("FueltypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("TurboazFetching.Entities.Language", "Language")
-                        .WithMany("FueltypeLocales")
+                        .WithMany("FuelTypeLocales")
                         .HasForeignKey("LanguageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Fueltype");
+
+                    b.Navigation("Language");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.GearTypeLocale", b =>
+                {
+                    b.HasOne("TurboazFetching.Entities.GearType", "GearType")
+                        .WithMany("GearTypeLocales")
+                        .HasForeignKey("GearTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TurboazFetching.Entities.Language", "Language")
+                        .WithMany("GearTypeLocales")
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GearType");
 
                     b.Navigation("Language");
                 });
@@ -771,6 +975,25 @@ namespace TurboazFetching.Migrations
                         .HasForeignKey("CarId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.MarketLocale", b =>
+                {
+                    b.HasOne("TurboazFetching.Entities.Language", "Language")
+                        .WithMany("MarketLocales")
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("TurboazFetching.Entities.Market", "Market")
+                        .WithMany("MarketLocales")
+                        .HasForeignKey("MarketId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Language");
+
+                    b.Navigation("Market");
                 });
 
             modelBuilder.Entity("TurboazFetching.Entities.Model", b =>
@@ -861,9 +1084,14 @@ namespace TurboazFetching.Migrations
                     b.Navigation("FeatureLocales");
                 });
 
-            modelBuilder.Entity("TurboazFetching.Entities.Fueltype", b =>
+            modelBuilder.Entity("TurboazFetching.Entities.FuelType", b =>
                 {
-                    b.Navigation("FueltypeLocales");
+                    b.Navigation("FuelTypeLocales");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.GearType", b =>
+                {
+                    b.Navigation("GearTypeLocales");
                 });
 
             modelBuilder.Entity("TurboazFetching.Entities.Language", b =>
@@ -876,11 +1104,20 @@ namespace TurboazFetching.Migrations
 
                     b.Navigation("FeatureLocales");
 
-                    b.Navigation("FueltypeLocales");
+                    b.Navigation("FuelTypeLocales");
+
+                    b.Navigation("GearTypeLocales");
+
+                    b.Navigation("MarketLocales");
 
                     b.Navigation("RegionLocales");
 
                     b.Navigation("TransmissionLocales");
+                });
+
+            modelBuilder.Entity("TurboazFetching.Entities.Market", b =>
+                {
+                    b.Navigation("MarketLocales");
                 });
 
             modelBuilder.Entity("TurboazFetching.Entities.Region", b =>

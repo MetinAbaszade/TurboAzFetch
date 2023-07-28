@@ -42,6 +42,18 @@ namespace TurboazFetching.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Categories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Categories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Colors",
                 columns: table => new
                 {
@@ -91,6 +103,18 @@ namespace TurboazFetching.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GearTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GearTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Languages",
                 columns: table => new
                 {
@@ -102,6 +126,31 @@ namespace TurboazFetching.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Languages", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Markets",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Markets", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MileageTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MileageTypes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -126,6 +175,29 @@ namespace TurboazFetching.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Transmissions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Users",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Number = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Surname = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ProfileImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PasswordHash = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    PasswordSalt = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    TokenExpires = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -194,6 +266,33 @@ namespace TurboazFetching.Migrations
                         principalTable: "Languages",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CategoryLocales",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LanguageId = table.Column<int>(type: "int", nullable: false),
+                    CategoryId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CategoryLocales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CategoryLocales_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_CategoryLocales_Languages_LanguageId",
+                        column: x => x.LanguageId,
+                        principalTable: "Languages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -278,6 +377,60 @@ namespace TurboazFetching.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GearTypeLocales",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LanguageId = table.Column<int>(type: "int", nullable: false),
+                    GearTypeId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GearTypeLocales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_GearTypeLocales_GearTypes_GearTypeId",
+                        column: x => x.GearTypeId,
+                        principalTable: "GearTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_GearTypeLocales_Languages_LanguageId",
+                        column: x => x.LanguageId,
+                        principalTable: "Languages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MarketLocales",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MarketId = table.Column<int>(type: "int", nullable: false),
+                    LanguageId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MarketLocales", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MarketLocales_Languages_LanguageId",
+                        column: x => x.LanguageId,
+                        principalTable: "Languages",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_MarketLocales_Markets_MarketId",
+                        column: x => x.MarketId,
+                        principalTable: "Markets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RegionLocales",
                 columns: table => new
                 {
@@ -332,45 +485,32 @@ namespace TurboazFetching.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CarFeature",
-                columns: table => new
-                {
-                    CarsId = table.Column<int>(type: "int", nullable: false),
-                    FeaturesId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CarFeature", x => new { x.CarsId, x.FeaturesId });
-                    table.ForeignKey(
-                        name: "FK_CarFeature_Features_FeaturesId",
-                        column: x => x.FeaturesId,
-                        principalTable: "Features",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Cars",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    OwnerId = table.Column<int>(type: "int", nullable: true),
                     BrandId = table.Column<int>(type: "int", nullable: false),
                     ModelId = table.Column<int>(type: "int", nullable: false),
-                    YearId = table.Column<int>(type: "int", nullable: false),
+                    ReleaseYearId = table.Column<int>(type: "int", nullable: false),
                     ColorId = table.Column<int>(type: "int", nullable: false),
-                    RegionId = table.Column<int>(type: "int", nullable: false),
+                    MarketId = table.Column<int>(type: "int", nullable: false),
+                    RegionId = table.Column<int>(type: "int", nullable: true),
+                    GearTypeId = table.Column<int>(type: "int", nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: false),
                     FueltypeId = table.Column<int>(type: "int", nullable: false),
                     CurrencyId = table.Column<int>(type: "int", nullable: false),
-                    AutoSalonId = table.Column<int>(type: "int", nullable: false),
+                    AutoSalonId = table.Column<int>(type: "int", nullable: true),
                     TransmissionId = table.Column<int>(type: "int", nullable: false),
                     EngineVolume = table.Column<int>(type: "int", nullable: false),
                     HorsePower = table.Column<int>(type: "int", nullable: false),
                     LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Comment = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Mileage = table.Column<int>(type: "int", nullable: false),
+                    MileageTypeId = table.Column<int>(type: "int", nullable: false),
                     Price = table.Column<int>(type: "int", nullable: false),
+                    SeatCount = table.Column<int>(type: "int", nullable: true),
                     CreditAvailable = table.Column<bool>(type: "bit", nullable: false),
                     BarterAvailable = table.Column<bool>(type: "bit", nullable: false)
                 },
@@ -381,14 +521,19 @@ namespace TurboazFetching.Migrations
                         name: "FK_Cars_AutoSalons_AutoSalonId",
                         column: x => x.AutoSalonId,
                         principalTable: "AutoSalons",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Cars_Brands_BrandId",
                         column: x => x.BrandId,
                         principalTable: "Brands",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Cars_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Cars_Colors_ColorId",
                         column: x => x.ColorId,
@@ -408,6 +553,24 @@ namespace TurboazFetching.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
+                        name: "FK_Cars_GearTypes_GearTypeId",
+                        column: x => x.GearTypeId,
+                        principalTable: "GearTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Cars_Markets_MarketId",
+                        column: x => x.MarketId,
+                        principalTable: "Markets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Cars_MileageTypes_MileageTypeId",
+                        column: x => x.MileageTypeId,
+                        principalTable: "MileageTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "FK_Cars_Models_ModelId",
                         column: x => x.ModelId,
                         principalTable: "Models",
@@ -416,8 +579,7 @@ namespace TurboazFetching.Migrations
                         name: "FK_Cars_Regions_RegionId",
                         column: x => x.RegionId,
                         principalTable: "Regions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Cars_Transmissions_TransmissionId",
                         column: x => x.TransmissionId,
@@ -425,9 +587,38 @@ namespace TurboazFetching.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Cars_Years_YearId",
-                        column: x => x.YearId,
+                        name: "FK_Cars_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Cars_Years_ReleaseYearId",
+                        column: x => x.ReleaseYearId,
                         principalTable: "Years",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CarFeature",
+                columns: table => new
+                {
+                    CarsId = table.Column<int>(type: "int", nullable: false),
+                    FeaturesId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CarFeature", x => new { x.CarsId, x.FeaturesId });
+                    table.ForeignKey(
+                        name: "FK_CarFeature_Cars_CarsId",
+                        column: x => x.CarsId,
+                        principalTable: "Cars",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CarFeature_Features_FeaturesId",
+                        column: x => x.FeaturesId,
+                        principalTable: "Features",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -450,52 +641,6 @@ namespace TurboazFetching.Migrations
                         principalTable: "Cars",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Categories",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ImageId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Categories", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Categories_Images_ImageId",
-                        column: x => x.ImageId,
-                        principalTable: "Images",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CategoryLocales",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    LanguageId = table.Column<int>(type: "int", nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CategoryLocales", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_CategoryLocales_Categories_CategoryId",
-                        column: x => x.CategoryId,
-                        principalTable: "Categories",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_CategoryLocales_Languages_LanguageId",
-                        column: x => x.LanguageId,
-                        principalTable: "Languages",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -544,9 +689,29 @@ namespace TurboazFetching.Migrations
                 column: "FueltypeId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Cars_GearTypeId",
+                table: "Cars",
+                column: "GearTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cars_MarketId",
+                table: "Cars",
+                column: "MarketId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cars_MileageTypeId",
+                table: "Cars",
+                column: "MileageTypeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Cars_ModelId",
                 table: "Cars",
                 column: "ModelId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cars_OwnerId",
+                table: "Cars",
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Cars_RegionId",
@@ -554,19 +719,14 @@ namespace TurboazFetching.Migrations
                 column: "RegionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Cars_ReleaseYearId",
+                table: "Cars",
+                column: "ReleaseYearId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Cars_TransmissionId",
                 table: "Cars",
                 column: "TransmissionId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Cars_YearId",
-                table: "Cars",
-                column: "YearId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Categories_ImageId",
-                table: "Categories",
-                column: "ImageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CategoryLocales_CategoryId",
@@ -609,9 +769,29 @@ namespace TurboazFetching.Migrations
                 column: "LanguageId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_GearTypeLocales_GearTypeId",
+                table: "GearTypeLocales",
+                column: "GearTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GearTypeLocales_LanguageId",
+                table: "GearTypeLocales",
+                column: "LanguageId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Images_CarId",
                 table: "Images",
                 column: "CarId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MarketLocales_LanguageId",
+                table: "MarketLocales",
+                column: "LanguageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MarketLocales_MarketId",
+                table: "MarketLocales",
+                column: "MarketId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Models_BaseModelId",
@@ -642,35 +822,11 @@ namespace TurboazFetching.Migrations
                 name: "IX_TransmissionLocales_TransmissionId",
                 table: "TransmissionLocales",
                 column: "TransmissionId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_CarFeature_Cars_CarsId",
-                table: "CarFeature",
-                column: "CarsId",
-                principalTable: "Cars",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Cars_Categories_CategoryId",
-                table: "Cars",
-                column: "CategoryId",
-                principalTable: "Categories",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Cars_AutoSalons_AutoSalonId",
-                table: "Cars");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Images_Cars_CarId",
-                table: "Images");
-
             migrationBuilder.DropTable(
                 name: "AutoSalonLocales");
 
@@ -690,6 +846,15 @@ namespace TurboazFetching.Migrations
                 name: "FueltypeLocales");
 
             migrationBuilder.DropTable(
+                name: "GearTypeLocales");
+
+            migrationBuilder.DropTable(
+                name: "Images");
+
+            migrationBuilder.DropTable(
+                name: "MarketLocales");
+
+            migrationBuilder.DropTable(
                 name: "RegionLocales");
 
             migrationBuilder.DropTable(
@@ -699,13 +864,13 @@ namespace TurboazFetching.Migrations
                 name: "Features");
 
             migrationBuilder.DropTable(
+                name: "Cars");
+
+            migrationBuilder.DropTable(
                 name: "Languages");
 
             migrationBuilder.DropTable(
                 name: "AutoSalons");
-
-            migrationBuilder.DropTable(
-                name: "Cars");
 
             migrationBuilder.DropTable(
                 name: "Categories");
@@ -720,6 +885,15 @@ namespace TurboazFetching.Migrations
                 name: "Fueltypes");
 
             migrationBuilder.DropTable(
+                name: "GearTypes");
+
+            migrationBuilder.DropTable(
+                name: "Markets");
+
+            migrationBuilder.DropTable(
+                name: "MileageTypes");
+
+            migrationBuilder.DropTable(
                 name: "Models");
 
             migrationBuilder.DropTable(
@@ -729,10 +903,10 @@ namespace TurboazFetching.Migrations
                 name: "Transmissions");
 
             migrationBuilder.DropTable(
-                name: "Years");
+                name: "Users");
 
             migrationBuilder.DropTable(
-                name: "Images");
+                name: "Years");
 
             migrationBuilder.DropTable(
                 name: "Brands");

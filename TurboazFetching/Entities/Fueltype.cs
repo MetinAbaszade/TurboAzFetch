@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace TurboazFetching.Entities
 {
-    public class Fueltype
+    public class FuelType
     {
         public int Id { get; set; }
-        public List<FueltypeLocale> FueltypeLocales { get; set; } = new();
+        public List<FuelTypeLocale> FuelTypeLocales { get; set; } = new();
 
-        public Fueltype() { }
+        public FuelType() { }
     }
 }

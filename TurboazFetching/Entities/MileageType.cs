@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 
 namespace TurboazFetching.Entities
 {
-    public class Category
+    public class MileageType
     {
-        public int Id { get; set; } 
-        public List<CategoryLocale> CategoryLocales { get; set; } = new();
+        public MileageType()
+        {
+            
+        }
 
-        public Category() {}
+        public int Id { get; set; }
+        public string Name { get; set; }
     }
 }
