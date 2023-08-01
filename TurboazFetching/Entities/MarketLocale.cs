@@ -9,10 +9,11 @@ namespace TurboazFetching.Entities
     public class MarketLocale
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public int LanguageId { get; set; }
+        public string Name { get; set; } = string.Empty;
 
-        public Market Market { get; set; }
-        public Language Language { get; set; }
+        public Market? Market { get; set; }
+        public Language? Language { get; set; }
 
         public MarketLocale()
         {

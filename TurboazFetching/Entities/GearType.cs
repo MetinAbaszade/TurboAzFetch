@@ -9,7 +9,7 @@ namespace TurboazFetching.Entities
     public class GearType
     {
         public int Id { get; set; }
-        public List<GearTypeLocale> GearTypeLocales { get; set; }
+        public List<GearTypeLocale> GearTypeLocales { get; set; } = new();
 
         public GearType()
         {

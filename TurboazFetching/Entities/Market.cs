@@ -9,7 +9,7 @@ namespace TurboazFetching.Entities
     public class Market
     {
         public int Id { get; set; }
-        public List<MarketLocale> MarketLocales { get; set; }
+        public List<MarketLocale> MarketLocales { get; set; } = new();
 
         public Market()
         {

@@ -9,10 +9,11 @@ namespace TurboazFetching.Entities
     public class FuelTypeLocale
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public int LanguageId { get; set; }
+        public string Name { get; set; } = string.Empty;
 
-        public Language Language { get; set; }
-        public FuelType Fueltype { get; set; }
+        public Language? Language { get; set; }
+        public FuelType? FuelType { get; set; }
 
         public FuelTypeLocale() { }
     }

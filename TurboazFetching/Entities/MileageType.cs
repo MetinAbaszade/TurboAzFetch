@@ -8,12 +8,12 @@ namespace TurboazFetching.Entities
 {
     public class MileageType
     {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+
         public MileageType()
         {
             
         }
-
-        public int Id { get; set; }
-        public string Name { get; set; }
     }
 }

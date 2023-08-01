@@ -36,20 +36,20 @@ namespace TurboazFetching.Entities
         public List<Image> Images { get; set; } = new();
         public List<Feature> Features { get; set; } = new();
 
-        public User Owner { get; set; }
-        public Brand Brand { get; set; }
-        public Model Model { get; set; }
-        public Year Year { get; set; }
-        public Color Color { get; set; }
-        public Region Region { get; set; }
-        public Market Market { get; set; }
-        public GearType GearType { get; set; }
-        public Category Category { get; set; }
-        public FuelType Fueltype { get; set; }
-        public Currency Currency { get; set; }
-        public MileageType MileageType { get; set; }
-        public Transmission Transmission { get; set; }
-        public AutoSalon AutoSalon { get; set; }
+        public User? Owner { get; set; }
+        public Brand? Brand { get; set; }
+        public Model? Model { get; set; }
+        public Year? Year { get; set; }
+        public Color? Color { get; set; }
+        public Region? Region { get; set; }
+        public Market? Market { get; set; }
+        public GearType? GearType { get; set; }
+        public Category? Category { get; set; }
+        public FuelType? Fueltype { get; set; }
+        public Currency? Currency { get; set; }
+        public MileageType? MileageType { get; set; }
+        public Transmission? Transmission { get; set; }
+        public AutoSalon? AutoSalon { get; set; }
 
         public Car() { }
     }

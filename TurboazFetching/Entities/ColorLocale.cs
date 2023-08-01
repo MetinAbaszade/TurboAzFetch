@@ -9,10 +9,11 @@ namespace TurboazFetching.Entities
     public class ColorLocale
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public int LanguageId { get; set; }
+        public string Name { get; set; } = string.Empty;
 
-        public Color Color { get; set; }
-        public Language Language { get; set; }
+        public Color? Color { get; set; }
+        public Language? Language { get; set; }
 
         public ColorLocale() { }
     }

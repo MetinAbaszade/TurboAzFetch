@@ -28,30 +28,32 @@ namespace TurboazFetching.Data
         public DbSet<Transmission> Transmissions { get; set; }
         public DbSet<RegionLocale> RegionLocales { get; set; }
         public DbSet<MarketLocale> MarketLocales { get; set; }
+        public DbSet<FeatureLocale> FeatureLocales { get; set; }
         public DbSet<FuelTypeLocale> FueltypeLocales { get; set; }
         public DbSet<CategoryLocale> CategoryLocales { get; set; }
         public DbSet<GearTypeLocale> GearTypeLocales { get; set; }
         public DbSet<AutoSalonLocale> AutoSalonLocales { get; set; }
         public DbSet<TransmissionLocale> TransmissionLocales { get; set; }
-        public DbSet<FeatureLocale> FeatureLocales { get; set; }
 
         public AppDbContext() { }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-
+            this.Database.SetCommandTimeout(100000);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlServer("Data Source=METIN-ABASZADE;Initial Catalog=CarUniverse;Integrated Security=True;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
+            optionsBuilder.UseSqlServer("Data Source=DESKTOP-G1Q07RP;Initial Catalog=CarUniverse;Integrated Security=True;Encrypt=False;Trust Server Certificate=False;Application Intent=ReadWrite;Multi Subnet Failover=False");
             optionsBuilder.EnableSensitiveDataLogging();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
 
             #region SettingRelations
 
@@ -119,10 +121,10 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<CategoryLocale>()
             .HasOne(cl => cl.Language)
             .WithMany(l => l.CategoryLocales)
-            .HasForeignKey("LanguageId")
+            .HasForeignKey(cl => cl.LanguageId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
-            
+
             modelBuilder.Entity<Market>()
               .HasMany<Car>()
               .WithOne(c => c.Market)
@@ -140,7 +142,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<MarketLocale>()
             .HasOne(ml => ml.Language)
             .WithMany(l => l.MarketLocales)
-            .HasForeignKey("LanguageId")
+            .HasForeignKey(ml => ml.LanguageId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
 
@@ -159,7 +161,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<RegionLocale>()
             .HasOne(rl => rl.Language)
             .WithMany(l => l.RegionLocales)
-            .HasForeignKey("LanguageId")
+            .HasForeignKey(rl => rl.LanguageId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired();
 
@@ -171,14 +173,14 @@ namespace TurboazFetching.Data
 
             modelBuilder.Entity<FuelType>()
               .HasMany(ft => ft.FuelTypeLocales)
-              .WithOne(ftl => ftl.Fueltype)
+              .WithOne(ftl => ftl.FuelType)
               .HasForeignKey("FueltypeId")
               .IsRequired();
 
             modelBuilder.Entity<FuelTypeLocale>()
              .HasOne(ftl => ftl.Language)
              .WithMany(l => l.FuelTypeLocales)
-             .HasForeignKey("LanguageId")
+             .HasForeignKey(ftl => ftl.LanguageId)
              .IsRequired();
 
             modelBuilder.Entity<Color>()
@@ -196,7 +198,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<ColorLocale>()
              .HasOne(cl => cl.Language)
              .WithMany(l => l.ColorLocales)
-             .HasForeignKey("LanguageId")
+             .HasForeignKey(c => c.LanguageId)
              .IsRequired();
 
             modelBuilder.Entity<Currency>()
@@ -220,7 +222,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<GearTypeLocale>()
            .HasOne(gtl => gtl.Language)
            .WithMany(l => l.GearTypeLocales)
-           .HasForeignKey("LanguageId")
+           .HasForeignKey(gtl => gtl.LanguageId)
            .IsRequired();
 
             modelBuilder.Entity<Transmission>()
@@ -238,7 +240,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<TransmissionLocale>()
            .HasOne(tl => tl.Language)
            .WithMany(l => l.TransmissionLocales)
-           .HasForeignKey("LanguageId")
+           .HasForeignKey(tl => tl.LanguageId)
            .IsRequired();
 
             modelBuilder.Entity<Year>()
@@ -251,7 +253,8 @@ namespace TurboazFetching.Data
              .HasMany(c => c.Images)
              .WithOne()
              .HasForeignKey("CarId")
-             .IsRequired();
+             .IsRequired()
+             .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<AutoSalon>()
             .HasMany(s => s.Cars)
@@ -268,7 +271,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<AutoSalonLocale>()
            .HasOne(sl => sl.Language)
            .WithMany(l => l.AutoSalonLocales)
-           .HasForeignKey("LanguageId")
+           .HasForeignKey(sl => sl.LanguageId)
            .IsRequired();
 
             modelBuilder.Entity<Feature>()
@@ -283,7 +286,7 @@ namespace TurboazFetching.Data
             modelBuilder.Entity<FeatureLocale>()
            .HasOne(fl => fl.Language)
            .WithMany(l => l.FeatureLocales)
-           .HasForeignKey("LanguageId");
+           .HasForeignKey(fl => fl.LanguageId);
             #endregion
 
         }

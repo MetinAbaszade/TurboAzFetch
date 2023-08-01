@@ -9,9 +9,11 @@ namespace TurboazFetching.Entities
     public class TransmissionLocale
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public Language Language { get; set; }
-        public Transmission Transmission { get; set; }
+        public int LanguageId { get; set; }
+        public string Name { get; set; } = string.Empty;
+
+        public Language? Language { get; set; }
+        public Transmission? Transmission { get; set; }
 
         public TransmissionLocale() { }
     }

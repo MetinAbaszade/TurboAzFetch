@@ -12,7 +12,7 @@ using TurboazFetching.Data;
 namespace TurboazFetching.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230728135922_init")]
+    [Migration("20230801152559_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -352,7 +352,7 @@ namespace TurboazFetching.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("FeatureId")
+                    b.Property<int?>("FeatureId")
                         .HasColumnType("int");
 
                     b.Property<int>("LanguageId")
@@ -915,9 +915,7 @@ namespace TurboazFetching.Migrations
                 {
                     b.HasOne("TurboazFetching.Entities.Feature", "Feature")
                         .WithMany("FeatureLocales")
-                        .HasForeignKey("FeatureId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FeatureId");
 
                     b.HasOne("TurboazFetching.Entities.Language", "Language")
                         .WithMany("FeatureLocales")
@@ -932,7 +930,7 @@ namespace TurboazFetching.Migrations
 
             modelBuilder.Entity("TurboazFetching.Entities.FuelTypeLocale", b =>
                 {
-                    b.HasOne("TurboazFetching.Entities.FuelType", "Fueltype")
+                    b.HasOne("TurboazFetching.Entities.FuelType", "FuelType")
                         .WithMany("FuelTypeLocales")
                         .HasForeignKey("FueltypeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -944,7 +942,7 @@ namespace TurboazFetching.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Fueltype");
+                    b.Navigation("FuelType");
 
                     b.Navigation("Language");
                 });
